@@ -519,10 +519,10 @@
        ====================================================== -->
   <script>
     (function () {
-      var STEPS = [16, 18, 19, 21, 23, 25, 28, 32];   // 글자 크기 단계(px)
+      var STEPS = [13, 14, 15, 16, 18, 19, 21, 23, 25, 28, 32];   // 글자 크기 단계(px)
       var KEY = "proprium-font-step";
 
-      function defaultIdx() { return (window.innerWidth <= 600) ? 2 : 1; } // 모바일 19px, PC 18px
+      function defaultIdx() { return (window.innerWidth <= 600) ? 5 : 4; } // 모바일 19px, PC 18px
       function valid(n) { return typeof n === "number" && n >= 0 && n < STEPS.length && n === Math.floor(n); }
       function stored() {
         try {
