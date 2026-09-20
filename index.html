@@ -56,11 +56,11 @@
       --white: #fffdf8;
 
       /* 본문 기본 글자 크기 (JS가 글자 크기 단계에 맞춰 바꿈) */
-      --base: 18px;
+      --base: 16px;
     }
 
     @media (max-width: 600px) {
-      :root { --base: 19px; }
+      :root { --base: 17px; }
     }
 
     * { box-sizing: border-box; }
@@ -522,7 +522,7 @@
       var STEPS = [10, 11, 12, 13, 14, 15, 16, 18, 19, 21, 23, 25, 28, 32];   // 글자 크기 단계(px)
       var KEY = "proprium-font-step";
 
-      function defaultIdx() { return (window.innerWidth <= 600) ? 8 : 7; } // 모바일 19px, PC 18px
+      function defaultIdx() { return (window.innerWidth <= 600) ? 7 : 6; } // 모바일 19px, PC 18px
       function valid(n) { return typeof n === "number" && n >= 0 && n < STEPS.length && n === Math.floor(n); }
       function stored() {
         try {
