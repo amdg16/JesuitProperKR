@@ -786,7 +786,7 @@
       var html = "";
       var buffer = [];
       var baseName = baseItemName(itemName);
-      var isVerseSection = (baseName === "화답송" || baseName === "복음 환호송" || baseName === "감사송");
+      var isVerseSection = (baseName === "화답송" || baseName === "복음 환호송");
       var isAntiphon = (itemName === "입당송" || itemName === "영성체송");
       var isFirstBlock = true;
       var nextBlockStyle = "";
@@ -795,7 +795,7 @@
         if (buffer.length === 0) return;
         var cls = (isFirstBlock && isAntiphon) ? ' class="antiphon-body"' : "";
         var stl = nextBlockStyle ? ' style="' + nextBlockStyle + '"' : "";
-        html += "<p" + cls + stl + ">" + buffer.map(escapeHtml).join("<br>") + "</p>";
+        html += "<p" + cls + stl + ">" + buffer.map(escapeHtmlWithCross).join("<br>") + "</p>";
         buffer = [];
         isFirstBlock = false;
         nextBlockStyle = "";
