@@ -12,10 +12,10 @@
   <meta property="og:type" content="website">
   <meta property="og:title" content="예수회 고유미사">
   <meta property="og:description" content="그날의 예수회 고유미사를 펼쳐 보는 곳.">
-  <meta property="og:image" content="https://monumental-conkies-53328e.netlify.app/.netlify/images?url=/img/ihs-emblem.png&amp;w=1200&amp;h=630&amp;fit=cover&amp;fm=jpg">
+  <meta property="og:image" content="img/ihs-emblem.png">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="/.netlify/images?url=/img/ihs-emblem.png&amp;w=180&amp;h=180&amp;fit=cover&amp;fm=png">
+  <link rel="apple-touch-icon" href="img/ihs-emblem.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600&amp;display=swap">
@@ -589,7 +589,7 @@
 
     <div class="footer ui-font">
       <img class="footer-mark" alt=""
-           src="/.netlify/images?url=/img/ihs-emblem.png&amp;w=320&amp;h=320&amp;fit=cover&amp;fm=webp"
+           src="img/ihs-emblem.png"
            width="36" height="36" loading="lazy" decoding="async">
       <div>예수회 고유미사 · Proprium Missarum Societatis Iesu</div>
     </div>
@@ -772,12 +772,18 @@
         .filter(function (l) { return l.length > 0; });
     }
 
+    // "제1독서(부활시기)", "화답송(부활시기)" 같은 접미사 항목을 원래 항목과 같게 취급
+    function baseItemName(itemName) {
+      return String(itemName || "").replace(/\s*[（(].*?[)）]\s*$/, "").trim();
+    }
+
     function parseLiturgicalContent(itemName, text) {
+      var baseName = baseItemName(itemName);
       var lines = splitLines(text);
       var subtitle = "";
 
       // 입당송 / 영성체송
-      if (itemName === "입당송" || itemName === "영성체송") {
+      if (baseName === "입당송" || baseName === "영성체송") {
         var refMatch = lines.length > 0
           ? lines[0].match(/^([^\s]+ \d+[0-9a-zA-Z가-힣,.\-()]*\s*(?:참조)?)\s+(.*)/)
           : null;
@@ -794,8 +800,8 @@
         }
       }
 
-      // 제1독서 / 제2독서 / 복음
-      else if (itemName === "제1독서" || itemName === "제2독서" || itemName === "복음") {
+      // 제1독서 / 제2독서 / 복음 (부활시기 등 접미사 포함)
+      else if (baseName === "제1독서" || baseName === "제2독서" || baseName === "복음") {
         var match = lines.length > 0 ? lines[0].match(/^[<〈](.*?)[>〉](.*)/) : null;
         if (match) {
           subtitle = "〈" + match[1].trim() + "〉";
@@ -807,8 +813,8 @@
         }
       }
 
-      // 화답송 / 복음 환호송
-      else if (itemName === "화답송" || itemName === "복음 환호송") {
+      // 화답송 / 복음 환호송 (부활시기 등 접미사 포함)
+      else if (baseName === "화답송" || baseName === "복음 환호송") {
         if (lines.length > 0 && lines[0].charAt(0) !== "◎" && lines[0].charAt(0) !== "○") {
           subtitle = lines[0];
           lines.shift();
@@ -825,7 +831,8 @@
     function formatParagraphsForLiturgy(itemName, lines) {
       var html = "";
       var buffer = [];
-      var isVerseSection = (itemName === "화답송" || itemName === "복음 환호송" || itemName === "감사송");
+      var baseName = baseItemName(itemName);
+      var isVerseSection = (baseName === "화답송" || baseName === "복음 환호송" || baseName === "감사송");
       var isAntiphon = (itemName === "입당송" || itemName === "영성체송");
       var isFirstBlock = true;
       var nextBlockStyle = "";
@@ -935,8 +942,7 @@
     /* ==========================================================
        화면 그리기
        ========================================================== */
-    var ORNAMENT_SRC =
-      "/.netlify/images?url=/img/frontispiece.png&w=1120&h=290&fit=cover&position=top&fm=webp";
+    var ORNAMENT_SRC = "img/frontispiece.png";
 
     function navCardHtml(info, dir) {
       var cls = "nav-card " + dir;
