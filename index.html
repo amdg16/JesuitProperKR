@@ -1,315 +1,1179 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>예수회 고유미사</title>
+  <meta name="description" content="예수회 고유미사(Proprium Missarum Societatis Iesu). 그날 미사의 고유 부분 — 입당송, 본기도, 독서와 복음, 예물기도, 영성체송, 영성체 후 기도 — 을 읽기 좋게 보여 드립니다.">
+  <meta name="theme-color" content="#f8f5ed">
+  <meta name="color-scheme" content="light">
+  <meta name="apple-mobile-web-app-title" content="고유미사">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="예수회 고유미사">
+  <meta property="og:description" content="그날의 예수회 고유미사를 펼쳐 보는 곳.">
+  <meta property="og:image" content="https://monumental-conkies-53328e.netlify.app/.netlify/images?url=/img/ihs-emblem.png&amp;w=1200&amp;h=630&amp;fit=cover&amp;fm=jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/.netlify/images?url=/img/ihs-emblem.png&amp;w=180&amp;h=180&amp;fit=cover&amp;fm=png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600&amp;display=swap">
+
+  <!-- ======================================================
+       ★ 설정 ★
+       DATA_URL : 이 사이트의 자료 주소. Netlify 함수가 구글 시트를 중계하고
+                  마지막으로 성공한 내용을 보관해 둡니다.
+       CSV_URL  : 함수를 쓸 수 없을 때 곧바로 읽을 구글 시트 CSV 주소
+                  (구글 시트 "웹에 게시"로 만든 주소)
+       ====================================================== -->
+  <script>
+    var DATA_URL = "/api/propers";
+    var CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSys6L2_-iAq7pmuS4puUKdWBpVAKk_-TycRZmxVOGHMpUyg0EyeLJzXhxUWevrtZoNETyyjzwPHk68/pub?gid=1700621661&single=true&output=csv";
+    var TIMEZONE = "Asia/Seoul";   // 날짜 기준 시간대 (한국 시간)
+    var NAV_SHOW_RANK = false;     // 이전/다음 버튼에 "기념일/축일" 등급도 붙일지
+  </script>
+
   <style>
+    /* ======================================================
+       기본
+       ====================================================== */
     :root {
-      --font-size: 16px;
-      --primary-color: #a71930; /* 예수회 붉은색 */
-      --bg-color: #fdfbf7; /* 종이 미색 */
-      --line-color: #d8c8b8; /* 은은한 구분선 색상 */
+      --paper: #f8f5ed;
+      --paper-dark: #eee9dc;
+      --ink: #292722;
+      --muted: #777269;
+      --accent: #6e2e32;
+      --accent-light: #8a5558;
+      --line: #d8d0c2;
+      --rubric: #8b4d4d;
+      --white: #fffdf8;
+
+      /* 본문 기본 글자 크기 (JS가 글자 크기 단계에 맞춰 바꿈) */
+      --base: 18px;
     }
-    body {
-      font-family: 'Nanum Myeongjo', 'KoPub Batang', serif;
-      font-size: var(--font-size);
-      line-height: 1.8;
-      background-color: #e9e5de; /* 바깥 회색 배경 */
+
+    @media (max-width: 600px) {
+      :root { --base: 19px; }
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
       margin: 0;
-      padding: 20px;
-      color: #222;
+      padding: 0;
+      background: var(--paper);
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
     }
-    #app-container {
-      max-width: 700px;
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, rgba(80,60,40,0.025) 1px, transparent 1px);
+      background-size: 5px 5px;
+      color: var(--ink);
+      font-family: Georgia, "Noto Serif KR", "Noto Serif CJK KR", "Nanum Myeongjo", "AppleMyungjo", "Batang", serif;
+      line-height: 1.85;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+      width: 100%;
+      max-width: 760px;
       margin: 0 auto;
-      background-color: var(--bg-color);
-      padding: 40px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-      border-radius: 4px;
+      padding: 20px 20px 60px;
     }
-    
-    /* 상단 도구줄 */
-    #toolbar {
+
+    .ui-font {
+      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    }
+
+    /* ======================================================
+       상단 도구줄
+       ====================================================== */
+    .toolbar {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      background: #fff;
-      padding: 10px 15px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-      border: 1px solid var(--line-color);
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
     }
-    .btn-group button {
-      font-family: 'Nanum Myeongjo', serif;
-      padding: 6px 12px;
-      margin-right: 5px;
+
+    .nav-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 7px 14px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: rgba(255,255,255,0.45);
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+      letter-spacing: -0.2px;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .nav-button:hover { background: var(--white); color: var(--accent); }
+
+    .nav-button.home {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+
+    .size-control { display: inline-flex; align-items: center; gap: 6px; }
+
+    .size-btn {
+      font-family: inherit;
+      min-width: 46px;
+      min-height: 40px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: rgba(255,255,255,0.45);
+      color: var(--accent);
+      font-size: 15px;
+      font-weight: 600;
       cursor: pointer;
-      border: 1px solid #ddd;
-      background: #fafafa;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .size-btn.reset { min-width: 0; padding: 0 12px; font-size: 13px; font-weight: normal; color: var(--muted); }
+    .size-btn:hover:not(:disabled) { background: var(--white); }
+    .size-btn:disabled { opacity: 0.35; cursor: default; }
+
+    /* ======================================================
+       이전 / 다음 고유미사
+       ====================================================== */
+    .navigation {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .navigation.bottom { margin-top: 22px; margin-bottom: 0; }
+    .navigation:empty { display: none; }
+
+    .nav-card {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      min-height: 68px;
+      padding: 9px 13px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: rgba(255,255,255,0.45);
+      color: var(--ink);
+      text-decoration: none;
+      line-height: 1.45;
+      transition: background 0.15s;
+    }
+
+    .nav-card:hover { background: var(--white); }
+    .nav-card.next { align-items: flex-end; text-align: right; }
+    .nav-card.disabled { opacity: 0.35; pointer-events: none; }
+
+    .nav-dir  { color: var(--muted); font-size: 12px; }
+    .nav-date { color: var(--accent); font-size: 15px; font-weight: 600; }
+    .nav-name { color: var(--muted); font-size: 13px; word-break: keep-all; }
+
+    /* ======================================================
+       미사 본문 종이 (글자 크기는 em 단위 → --base 하나로 전체 조절)
+       ====================================================== */
+    .book {
+      position: relative;
+      background: rgba(255,253,248,0.88);
+      border: 1px solid var(--line);
+      box-shadow: 0 2px 12px rgba(50,40,25,0.06);
+      padding: 42px 48px 55px;
+      font-size: var(--base);
+    }
+
+    .book::before {
+      content: "";
+      position: absolute;
+      left: 18px; top: 18px; bottom: 18px;
+      width: 1px;
+      background: rgba(110,46,50,0.12);
+    }
+
+    .book::after {
+      content: "";
+      position: absolute;
+      right: 18px; top: 18px; bottom: 18px;
+      width: 1px;
+      background: rgba(110,46,50,0.12);
+    }
+
+    h1 {
+      margin: 0 0 1.1em;
+      padding-bottom: 0.7em;
+      border-bottom: 1px solid var(--line);
+      color: var(--accent);
+      font-size: 1.5em;
+      font-weight: 600;
+      line-height: 1.4;
+      letter-spacing: -0.5px;
+      text-align: center;
+      word-break: keep-all;
+    }
+
+    h2 {
+      margin: 1.9em 0 0.45em;
+      padding-top: 2px;
+      color: var(--ink);
+      font-size: 1.1em;
+      font-weight: 600;
+      line-height: 1.5;
+    }
+
+    h2:first-of-type { margin-top: 1.3em; }
+
+    .item-name { color: var(--accent); }
+    .subtitle-normal { margin-left: 5px; color: var(--muted); font-size: 0.85em; font-weight: normal; }
+    .subtitle-small  { margin-left: 5px; color: var(--muted); font-size: 0.72em; font-weight: normal; }
+
+    hr.item-divider {
+      height: 1px;
+      margin: 0 0 0.95em;
+      border: 0;
+      background: var(--line);
+    }
+
+    p {
+      margin: 0 0 0.9em;
+      color: var(--ink);
+      font-size: 1em;
+      line-height: 1.9;
+      letter-spacing: -0.15px;
+      word-break: keep-all;
+      text-align: justify;
+    }
+
+    p.antiphon-body { margin-top: 1.1em; }
+
+    p.verse {
+      margin: 0 0 0.3em;
+      font-size: 0.95em;
+      line-height: 1.8;
+      text-align: left;
+    }
+
+    p.rubric {
+      margin: 1.1em 0;
+      color: var(--rubric);
+      font-size: 0.82em;
+      font-weight: 600;
+      line-height: 1.7;
+      text-align: left;
+    }
+
+    /* "주님의 말씀입니다." — 본문과 같은 모양 */
+    p.reading-outro { margin-top: 0; font-weight: normal; }
+
+    /* ======================================================
+       고유미사 없음 / 불러오는 중 / 오류
+       ====================================================== */
+    .empty-state, .status {
+      padding: 65px 20px;
+      text-align: center;
+    }
+
+    .status { color: var(--muted); font-size: 0.85em; line-height: 1.7; }
+    .status .retry {
+      margin-top: 14px;
+      padding: 10px 18px;
+      border: 1px solid var(--accent);
+      border-radius: 5px;
+      background: var(--accent);
+      color: white;
+      font-family: inherit;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .empty-symbol  { margin-bottom: 0.6em; color: var(--accent); font-size: 1.6em; }
+    .empty-date    { margin-bottom: 0.5em; color: var(--ink); font-size: 1.25em; font-weight: 600; }
+    .empty-message { margin-bottom: 1.6em; color: var(--muted); font-size: 0.85em; }
+
+    .empty-links {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 300px;
+      margin: 0 auto;
+    }
+
+    .empty-link {
+      display: block;
+      padding: 12px 15px;
+      border: 1px solid var(--line);
       border-radius: 4px;
+      background: var(--white);
+      color: var(--accent);
+      text-decoration: none;
       font-size: 14px;
     }
-    .btn-group button:hover { background: #eee; }
-    
-    /* 미사 본문 제목 스타일 */
-    .mass-header { text-align: center; margin-bottom: 30px; border-bottom: 3px double var(--primary-color); padding-bottom: 20px; }
-    .mass-date { font-size: 1.1em; color: #555; margin-bottom: 5px; }
-    .mass-title { font-size: 2em; font-weight: bold; color: var(--primary-color); margin: 0; line-height: 1.3; }
-    .mass-rank { font-size: 1em; font-weight: bold; margin-top: 10px; color: #444; }
-    
-    /* 삽화 이미지 */
-    .mass-art { text-align: center; margin-bottom: 30px; }
-    .mass-art img { max-width: 100%; height: auto; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    
-    /* 본문 섹션 및 구분선 */
-    .mass-section { margin-bottom: 30px; padding-bottom: 30px; border-bottom: 1px dashed var(--line-color); }
-    .mass-section:last-child { border-bottom: none; padding-bottom: 0; }
-    .section-title { font-weight: bold; color: var(--primary-color); margin-bottom: 12px; font-size: 1.15em; text-align: center; }
-    .section-content { white-space: pre-wrap; text-align: justify; word-break: keep-all; }
-    
-    /* 이전/다음 이동 버튼 (상단, 하단 공통) */
-    .nav-buttons { display: flex; justify-content: space-between; gap: 15px; margin: 30px 0; }
-    .nav-buttons button { 
-      font-family: 'Nanum Myeongjo', serif; 
-      padding: 12px; 
-      background: #fff; 
-      border: 1px solid var(--line-color); 
-      border-radius: 6px; 
-      cursor: pointer; 
-      flex: 1; 
-      font-size: 1em;
-      transition: background 0.2s;
-    }
-    .nav-buttons button:hover { background: #f2efe9; }
-    .nav-btn-text { color: #555; font-size: 0.9em; margin-bottom: 4px; display: block; }
-    .nav-btn-title { display: block; font-size: 0.95em; font-weight: bold; color: var(--primary-color); line-height: 1.4; }
-    
-    /* 목록 뷰 스타일 */
-    .list-item { padding: 15px; border-bottom: 1px solid var(--line-color); display: flex; gap: 20px; cursor: pointer; align-items: center; }
-    .list-item:hover { background: #f5f4e8; }
-    .list-date { font-weight: bold; color: var(--primary-color); min-width: 60px; font-size: 1.1em; }
-    .list-today { background: #fff9e6; border-left: 4px solid var(--primary-color); padding-left: 11px; }
 
-    /* 인쇄 모드 */
+    .footer {
+      margin-top: 25px;
+      color: var(--muted);
+      font-size: 11px;
+      text-align: center;
+      opacity: 0.7;
+    }
+
+    /* ======================================================
+       모바일
+       ====================================================== */
+    @media (max-width: 600px) {
+      .page { padding: 12px 10px 40px; }
+      .book { padding: 28px 18px 40px; }
+      .book::before { left: 8px; top: 10px; bottom: 10px; }
+      .book::after { right: 8px; top: 10px; bottom: 10px; }
+      p { text-align: left; }
+      .navigation { gap: 8px; }
+      .nav-card { padding: 8px 10px; }
+      .nav-name { font-size: 12.5px; }
+    }
+
+    @media (max-width: 380px) {
+      .page { padding-left: 7px; padding-right: 7px; }
+      .book { padding-left: 15px; padding-right: 15px; }
+      .nav-button { padding: 6px 9px; font-size: 13px; }
+    }
+
+    /* ======================================================
+       상단 도구줄 — 버튼 묶음
+       ====================================================== */
+    .toolbar { flex-wrap: wrap; }
+    .toolbar-group { display: inline-flex; gap: 8px; }
+
+    .nav-button.active {
+      border-color: var(--accent);
+      background: var(--white);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* ======================================================
+       알림 줄 (저장된 내용을 보여 줄 때)
+       ====================================================== */
+    .notice {
+      margin-bottom: 12px;
+      padding: 9px 13px;
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--accent-light);
+      border-radius: 4px;
+      background: rgba(255,255,255,0.55);
+      color: var(--muted);
+      font-size: 12.5px;
+      line-height: 1.65;
+    }
+
+    .notice:empty { display: none; }
+
+    /* ======================================================
+       전체 목록
+       ====================================================== */
+    .ornament {
+      display: block;
+      width: 100%;
+      max-width: 560px;
+      height: auto;
+      margin: -14px auto 2px;
+      mix-blend-mode: multiply;
+      opacity: 0.9;
+    }
+
+    .list-head { margin-bottom: 1.6em; text-align: center; }
+
+    .list-title {
+      margin: 0;
+      padding-bottom: 0;
+      border-bottom: 0;
+      color: var(--accent);
+      font-size: 1.45em;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .list-sub { margin-top: 0.7em; color: var(--muted); font-size: 0.72em; line-height: 1.7; }
+
+    .month { margin-top: 1.9em; }
+    .month:first-of-type { margin-top: 0.4em; }
+
+    .month .month-name {
+      margin: 0 0 0.35em;
+      padding: 0 0 0.35em;
+      border-bottom: 1px solid var(--line);
+      color: var(--accent);
+      font-size: 0.92em;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+
+    .entry {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      padding: 0.6em 0.45em;
+      border-bottom: 1px dotted var(--line);
+      color: var(--ink);
+      text-decoration: none;
+      line-height: 1.6;
+    }
+
+    .entry:last-child { border-bottom: 0; }
+    .entry:hover { background: var(--white); }
+    .entry.is-today { background: rgba(110,46,50,0.055); }
+
+    .entry-date {
+      flex: 0 0 5.4em;
+      color: var(--accent);
+      font-size: 0.82em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .entry-title { flex: 1 1 auto; font-size: 0.93em; word-break: keep-all; }
+    .entry-rank { flex: 0 0 auto; color: var(--muted); font-size: 0.72em; white-space: nowrap; }
+    .entry-more { margin-left: 7px; color: var(--muted); font-size: 0.8em; white-space: nowrap; }
+
+    .entry .tag {
+      display: inline-block;
+      margin-left: 7px;
+      padding: 1px 6px;
+      border: 1px solid var(--accent-light);
+      border-radius: 3px;
+      color: var(--accent-light);
+      font-size: 0.66em;
+      font-weight: 600;
+      white-space: nowrap;
+      vertical-align: 0.15em;
+    }
+
+    .footer-mark {
+      display: block;
+      width: 36px;
+      height: auto;
+      margin: 0 auto 9px;
+      mix-blend-mode: multiply;
+      opacity: 0.6;
+    }
+
+    @media (max-width: 600px) {
+      .toolbar-group { flex: 1 1 100%; }
+      .toolbar-group .nav-button { flex: 1 1 0; }
+      .size-control { margin: 0 auto; }
+      .entry { gap: 8px; flex-wrap: wrap; }
+      .entry-date { flex: 0 0 4.9em; }
+      .entry-rank { flex: 0 0 auto; }
+    }
+
+    /* ======================================================
+       인쇄 (미사 때 종이로 쓰실 수 있도록)
+       ====================================================== */
     @media print {
-      body { background-color: #fff; padding: 0; }
-      #app-container { box-shadow: none; padding: 0; max-width: 100%; border: none; }
-      #toolbar, .nav-buttons, .list-view { display: none !important; }
-      .mass-section { page-break-inside: avoid; border-bottom: 1px solid #ddd; }
+      :root { --base: 11.5pt; }
+
+      html, body { background: #fff; }
+      body { background-image: none; color: #000; }
+
+      .toolbar, .navigation, .notice { display: none !important; }
+      .page { max-width: none; padding: 0; }
+
+      .book {
+        border: 0;
+        padding: 0;
+        background: none;
+        box-shadow: none;
+      }
+
+      .book::before, .book::after { display: none; }
+
+      h1, .item-name, .entry-date, .list-title { color: #000; }
+      p.rubric { color: #333; }
+      a { color: inherit; text-decoration: none; }
+
+      h2, hr.item-divider { break-after: avoid; page-break-after: avoid; }
+      p { break-inside: avoid; page-break-inside: avoid; orphans: 2; widows: 2; }
+
+      .ornament, .footer-mark { filter: grayscale(1); }
+      .footer { margin-top: 20px; color: #555; opacity: 1; }
     }
   </style>
-</head>
-<body>
-<div id="app-container">
-  <!-- 상단 도구줄 -->
-  <div id="toolbar">
-    <div class="btn-group">
-      <button onclick="navigate('home')">오늘/다가오는 축일</button>
-      <button onclick="navigate('list')">전체 목록</button>
-    </div>
-    <div class="btn-group">
-      <button onclick="adjustFontSize(-2)">가−</button>
-      <button onclick="adjustFontSize(0)">기본</button>
-      <button onclick="adjustFontSize(2)">가+</button>
-    </div>
-  </div>
 
-  <!-- 메인 콘텐츠가 표시될 영역 -->
-  <div id="content">데이터를 불러오는 중입니다...</div>
-</div>
+  <!-- ======================================================
+       글자 크기 (먼저 실행해서 처음부터 원하는 크기로 그림)
+       ====================================================== -->
+  <script>
+    (function () {
+      var STEPS = [16, 18, 19, 21, 23, 25, 28, 32];   // 글자 크기 단계(px)
+      var KEY = "proprium-font-step";
+
+      function defaultIdx() { return (window.innerWidth <= 600) ? 2 : 1; } // 모바일 19px, PC 18px
+      function valid(n) { return typeof n === "number" && n >= 0 && n < STEPS.length && n === Math.floor(n); }
+      function stored() {
+        try {
+          var s = window.localStorage.getItem(KEY);
+          if (s !== null) { var n = parseInt(s, 10); if (valid(n)) return n; }
+        } catch (e) {}
+        return null;
+      }
+      function save(n) { try { window.localStorage.setItem(KEY, String(n)); } catch (e) {} }
+      function clearSaved() { try { window.localStorage.removeItem(KEY); } catch (e) {} }
+
+      var idx = stored();
+      if (idx === null) idx = defaultIdx();
+
+      function apply() { document.documentElement.style.setProperty("--base", STEPS[idx] + "px"); }
+      apply();
+
+      function refreshButtons() {
+        var down = document.getElementById("fs-down");
+        var up = document.getElementById("fs-up");
+        if (down) down.disabled = (idx <= 0);
+        if (up) up.disabled = (idx >= STEPS.length - 1);
+      }
+
+      function set(n) {
+        if (!valid(n)) return;
+        idx = n; apply(); save(idx); refreshButtons();
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        var down = document.getElementById("fs-down");
+        var up = document.getElementById("fs-up");
+        var reset = document.getElementById("fs-reset");
+        if (down) down.addEventListener("click", function () { set(idx - 1); });
+        if (up) up.addEventListener("click", function () { set(idx + 1); });
+        if (reset) reset.addEventListener("click", function () {
+          idx = defaultIdx(); apply(); clearSaved(); refreshButtons();
+        });
+        refreshButtons();
+      });
+    })();
+  </script>
+</head>
+
+<body>
+  <main class="page">
+
+    <div class="toolbar ui-font">
+      <div class="toolbar-group">
+        <a class="nav-button home" data-home href="./">다가오는 고유미사</a>
+        <a class="nav-button" data-view="list" href="?view=list">전체 목록</a>
+      </div>
+
+      <div class="size-control" role="group" aria-label="글자 크기">
+        <button type="button" class="size-btn" id="fs-down" aria-label="글자 작게">가−</button>
+        <button type="button" class="size-btn reset" id="fs-reset" aria-label="글자 크기 기본값">기본</button>
+        <button type="button" class="size-btn" id="fs-up" aria-label="글자 크게">가+</button>
+      </div>
+    </div>
+
+    <div class="notice ui-font" id="notice" role="status" aria-live="polite"></div>
+
+    <nav class="navigation ui-font" id="nav-top"></nav>
+
+    <article class="book" id="book">
+      <div class="status ui-font">불러오는 중…</div>
+    </article>
+
+    <nav class="navigation bottom ui-font" id="nav-bottom"></nav>
+
+    <div class="footer ui-font">
+      <img class="footer-mark" alt=""
+           src="/.netlify/images?url=/img/ihs-emblem.png&amp;w=320&amp;h=320&amp;fit=cover&amp;fm=webp"
+           width="36" height="36" loading="lazy" decoding="async">
+      <div>예수회 고유미사 · Proprium Missarum Societatis Iesu</div>
+    </div>
+  </main>
 
   <script>
-    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSys6L2_-iAq7pmuS4puUKdWBpVAKk_-TycRZmxVOGHMpUyg0EyeLJzXhxUWevrtZoNETyyjzwPHk68/pub?gid=1700621661&single=true&output=csv";
-    let massData = []; 
+  (function () {
+    "use strict";
 
-    function init() {
-      const savedSize = localStorage.getItem('mass-font-size');
-      if(savedSize) document.documentElement.style.setProperty('--font-size', savedSize + 'px');
-      fetchData();
-    }
+    var CACHE_KEY = "proprium-csv-cache";
+    var DATA = null;           // { rows, dates, info }
+    var currentState = null;   // 지금 보고 있는 화면 { view: "day" | "list", date: "MMdd" }
 
-    function adjustFontSize(delta) {
-      if(delta === 0) {
-        localStorage.removeItem('mass-font-size');
-        document.documentElement.style.setProperty('--font-size', '16px');
-        return;
+    /* ==========================================================
+       CSV 읽기 (따옴표 안의 줄바꿈·쉼표 처리)
+       ========================================================== */
+    function parseCSV(text) {
+      if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+      var rows = [], row = [], field = "", inQuotes = false;
+
+      for (var i = 0; i < text.length; i++) {
+        var c = text.charAt(i);
+        if (inQuotes) {
+          if (c === '"') {
+            if (text.charAt(i + 1) === '"') { field += '"'; i++; }
+            else { inQuotes = false; }
+          } else {
+            field += c;
+          }
+        } else {
+          if (c === '"') { inQuotes = true; }
+          else if (c === ",") { row.push(field); field = ""; }
+          else if (c === "\n") { row.push(field); rows.push(row); row = []; field = ""; }
+          else if (c === "\r") { /* 무시 */ }
+          else { field += c; }
+        }
       }
-      let currentSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--font-size'));
-      let newSize = currentSize + delta;
-      document.documentElement.style.setProperty('--font-size', newSize + 'px');
-      localStorage.setItem('mass-font-size', newSize);
+      if (field !== "" || row.length > 0) { row.push(field); rows.push(row); }
+      return rows;
     }
 
-    async function fetchData() {
-      try {
-        const response = await fetch(CSV_URL);
-        const csvText = await response.text();
-        parseCSVToData(csvText);
-        route(); 
-      } catch (e) {
-        document.getElementById('content').innerHTML = "데이터를 불러오는 중 오류가 발생했습니다.";
-      }
-    }
+    /* 시트의 날짜 칸을 "MMdd"로 통일: 0917 / 917 / 9/17 / 9월 17일 / 2026-09-17 / 9/17/2026 */
+    function normalizeDate(v) {
+      var s = String(v == null ? "" : v).trim();
+      if (!s) return "";
+      var m, mm, dd;
 
-    function parseCSVToData(text) {
-      let p = '', row = [''], rows = [row], i = 0, r = 0, s = !0, l;
-      for (l of text) {
-          if ('"' === l) {
-              if (s && l === p) row[i] += l;
-              s = !s;
-          } else if (',' === l && s) l = row[++i] = '';
-          else if ('\n' === l && s) {
-              if ('\r' === p) row[i] = row[i].slice(0, -1);
-              row = rows[++r] = [l = '']; i = 0;
-          } else row[i] += l;
-          p = l;
-      }
-
-      const dataMap = {};
-      rows.slice(1).forEach(r => {
-        if(r.length < 5) return;
-        let [dateRaw, title, rank, item, content] = r;
-        if(!dateRaw || !content || content.trim() === '') return;
-        
-        let mmdd = dateRaw.replace(/[^0-9]/g, '');
-        if(mmdd.length === 3) mmdd = '0' + mmdd;
-        if(mmdd.length !== 4) return;
-
-        if(!dataMap[mmdd]) dataMap[mmdd] = { date: mmdd, title, rank, items: {} };
-        dataMap[mmdd].items[item.trim()] = content.trim();
-      });
-      massData = Object.values(dataMap).sort((a, b) => a.date.localeCompare(b.date));
-    }
-
-    function route() {
-      const params = new URLSearchParams(window.location.search);
-      const view = params.get('view');
-      const date = params.get('date');
-
-      if (view === 'list') renderList();
-      else if (date) renderMass(date);
-      else renderUpcomingMass();
-    }
-
-    function navigate(type, date = '') {
-      const url = new URL(window.location.href);
-      url.search = '';
-      if(type === 'list') url.searchParams.set('view', 'list');
-      if(type === 'date') url.searchParams.set('date', date);
-      window.history.pushState({}, '', url);
-      route();
-    }
-
-    function renderList() {
-      const today = getTodayMMDD();
-      let html = '<h2 style="color:var(--primary-color); border-bottom:2px solid; padding-bottom:10px;">전체 목록</h2><div class="list-view">';
-      
-      massData.forEach(d => {
-        const isPast = d.date < today;
-        const isToday = d.date === today;
-        const bgClass = isToday ? 'list-today' : '';
-        const opStyle = isPast ? 'opacity: 0.5;' : '';
-        html += `<div class="list-item ${bgClass}" style="${opStyle}" onclick="navigate('date', '${d.date}')">
-                   <div class="list-date">${parseInt(d.date.substring(0,2))}월 ${parseInt(d.date.substring(2,4))}일</div>
-                   <div>
-                     <div style="font-weight:bold; font-size:1.1em;">${d.title}</div>
-                     <div style="font-size:0.9em; color:#777;">${d.rank}</div>
-                   </div>
-                 </div>`;
-      });
-      html += '</div>';
-      document.getElementById('content').innerHTML = html;
-    }
-
-    function renderUpcomingMass() {
-      const today = getTodayMMDD();
-      const upcoming = massData.find(d => d.date >= today) || massData[0];
-      if(upcoming) renderMass(upcoming.date);
-      else document.getElementById('content').innerHTML = "표시할 데이터가 없습니다.";
-    }
-
-    function createNavHtml(prev, next) {
-      let html = `<div class="nav-buttons">`;
-      if (prev) {
-        let pDate = `${parseInt(prev.date.substring(0,2))}월 ${parseInt(prev.date.substring(2,4))}일`;
-        html += `<button onclick="navigate('date', '${prev.date}')">
-                   <span class="nav-btn-text">← 이전</span>
-                   <span class="nav-btn-title">${pDate}<br>(${prev.title})</span>
-                 </button>`;
+      if ((m = s.match(/^\d{4}[-.\/\s]+(\d{1,2})[-.\/\s]+(\d{1,2})\D*$/))) {
+        mm = Number(m[1]); dd = Number(m[2]);
+      } else if ((m = s.match(/^(\d{1,2})[-.\/\s]+(\d{1,2})[-.\/\s]+\d{4}$/))) {
+        mm = Number(m[1]); dd = Number(m[2]);
+      } else if ((m = s.match(/^(\d{1,2})\D+(\d{1,2})\D*$/))) {
+        mm = Number(m[1]); dd = Number(m[2]);
+      } else if (/^\d{3,4}$/.test(s)) {
+        s = ("0000" + s).slice(-4);
+        mm = Number(s.substring(0, 2)); dd = Number(s.substring(2, 4));
       } else {
-        html += `<div style="flex:1"></div>`;
+        return "";
       }
-      if (next) {
-        let nDate = `${parseInt(next.date.substring(0,2))}월 ${parseInt(next.date.substring(2,4))}일`;
-        html += `<button onclick="navigate('date', '${next.date}')">
-                   <span class="nav-btn-text">다음 →</span>
-                   <span class="nav-btn-title">${nDate}<br>(${next.title})</span>
-                 </button>`;
-      } else {
-        html += `<div style="flex:1"></div>`;
+
+      if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return "";
+      return (mm < 10 ? "0" : "") + mm + (dd < 10 ? "0" : "") + dd;
+    }
+
+    function buildData(csvText) {
+      var table = parseCSV(csvText);
+      table.shift(); // 첫 행은 제목
+
+      var rows = [];
+      for (var i = 0; i < table.length; i++) {
+        var r = table[i];
+        var date = normalizeDate(r[0]);
+        if (!date) continue;
+        rows.push({
+          date: date,
+          title: String(r[1] || "").trim(),
+          rank: String(r[2] || "").trim(),
+          item: String(r[3] || "").trim(),
+          content: String(r[4] || "").trim()
+        });
       }
-      html += `</div>`;
+
+      var set = {}, info = {};
+      for (var j = 0; j < rows.length; j++) {
+        var x = rows[j];
+        set[x.date] = true;
+        if (!info[x.date]) info[x.date] = { title: "", rank: "" };
+        if (!info[x.date].title && x.title) info[x.date].title = x.title;
+        if (!info[x.date].rank && x.rank) info[x.date].rank = x.rank;
+      }
+
+      return { rows: rows, dates: Object.keys(set).sort(), info: info };
+    }
+
+    /* ==========================================================
+       날짜 도우미 (MMdd 문자열)
+       ========================================================== */
+    function todayMMDD() {
+      var parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: TIMEZONE, month: "2-digit", day: "2-digit"
+      }).formatToParts(new Date());
+      var m = "", d = "";
+      for (var i = 0; i < parts.length; i++) {
+        if (parts[i].type === "month") m = parts[i].value;
+        if (parts[i].type === "day") d = parts[i].value;
+      }
+      return m + d;
+    }
+
+    function isValidMMDD(s) {
+      if (!s || !/^\d{4}$/.test(s)) return false;
+      var m = Number(s.substring(0, 2)), d = Number(s.substring(2, 4));
+      return m >= 1 && m <= 12 && d >= 1 && d <= 31;
+    }
+
+    function formatMonthDay(mmdd) {
+      return Number(mmdd.substring(0, 2)) + "월 " + Number(mmdd.substring(2, 4)) + "일";
+    }
+
+    // 오늘(포함) 이후 가장 가까운 고유미사. 올해 남은 게 없으면 목록의 첫 날짜(=내년 첫 고유미사)
+    function getDefaultDate(today, dates) {
+      if (dates.length === 0) return today;
+      for (var i = 0; i < dates.length; i++) {
+        if (dates[i] >= today) return dates[i];
+      }
+      return dates[0];
+    }
+
+    function getPrevDate(target, dates) {
+      if (dates.length === 0) return null;
+      for (var i = dates.length - 1; i >= 0; i--) {
+        if (dates[i] < target) return dates[i];
+      }
+      return dates[dates.length - 1];
+    }
+
+    function getNextDate(target, dates) {
+      if (dates.length === 0) return null;
+      for (var i = 0; i < dates.length; i++) {
+        if (dates[i] > target) return dates[i];
+      }
+      return dates[0];
+    }
+
+    function buildNavInfo(mmdd) {
+      if (!mmdd) return null;
+      var info = DATA.info[mmdd] || { title: "", rank: "" };
+      var name = info.title;
+      if (NAV_SHOW_RANK && info.rank) name += " " + info.rank;
+      return { date: mmdd, label: formatMonthDay(mmdd), name: name };
+    }
+
+    /* ==========================================================
+       고유미사 본문 만들기 (기존 Code.gs와 같은 규칙)
+       ========================================================== */
+    function escapeHtml(text) {
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function firstNonEmpty(rows, key) {
+      for (var i = 0; i < rows.length; i++) {
+        if (rows[i][key]) return rows[i][key];
+      }
+      return "";
+    }
+
+    function buildDisplayTitle(mmdd, rawTitle, rank) {
+      var title = formatMonthDay(mmdd) + ": " + rawTitle;
+      if (rank) title += "(" + rank + ")";
+      return title;
+    }
+
+    function splitLines(text) {
+      return String(text).split(/\n+/).map(function (l) { return l.trim(); })
+        .filter(function (l) { return l.length > 0; });
+    }
+
+    function parseLiturgicalContent(itemName, text) {
+      var lines = splitLines(text);
+      var subtitle = "";
+
+      // 입당송 / 영성체송
+      if (itemName === "입당송" || itemName === "영성체송") {
+        var refMatch = lines.length > 0
+          ? lines[0].match(/^([^\s]+ \d+[0-9a-zA-Z가-힣,.\-()]*\s*(?:참조)?)\s+(.*)/)
+          : null;
+        var refOnly = lines.length > 1 && /^[^\s]+ \d+[0-9a-zA-Z가-힣,.\-()]*(?:\s+참조)?\s*$/.test(lines[0]);
+        if (refOnly) {
+          subtitle = lines[0];
+          lines.shift();
+        } else if (refMatch) {
+          subtitle = refMatch[1].trim();
+          lines[0] = refMatch[2].trim();
+        } else if (lines.length > 1 && lines[0].length < 35 && /[0-9]/.test(lines[0])) {
+          subtitle = lines[0];
+          lines.shift();
+        }
+      }
+
+      // 제1독서 / 제2독서 / 복음
+      else if (itemName === "제1독서" || itemName === "제2독서" || itemName === "복음") {
+        var match = lines.length > 0 ? lines[0].match(/^[<〈](.*?)[>〉](.*)/) : null;
+        if (match) {
+          subtitle = "〈" + match[1].trim() + "〉";
+          if (match[2].trim()) lines[0] = match[2].trim();
+          else lines.shift();
+        } else if (lines.length > 0 && /^[<〈].*[>〉]$/.test(lines[0])) {
+          subtitle = lines[0];
+          lines.shift();
+        }
+      }
+
+      // 화답송 / 복음 환호송
+      else if (itemName === "화답송" || itemName === "복음 환호송") {
+        if (lines.length > 0 && lines[0].charAt(0) !== "◎" && lines[0].charAt(0) !== "○") {
+          subtitle = lines[0];
+          lines.shift();
+        }
+      }
+
+      // 불필요한 숫자 제거
+      lines = lines.map(function (l) { return l.replace(/(말씀입니다\.)\s*[0-9]+\s*$/, "$1"); });
+      lines = lines.filter(function (l) { return !/^[0-9]+$/.test(l); });
+
+      return { subtitle: subtitle, lines: lines };
+    }
+
+    function formatParagraphsForLiturgy(itemName, lines) {
+      var html = "";
+      var buffer = [];
+      var isVerseSection = (itemName === "화답송" || itemName === "복음 환호송" || itemName === "감사송");
+      var isAntiphon = (itemName === "입당송" || itemName === "영성체송");
+      var isFirstBlock = true;
+      var nextBlockStyle = "";
+
+      function flush() {
+        if (buffer.length === 0) return;
+        var cls = (isFirstBlock && isAntiphon) ? ' class="antiphon-body"' : "";
+        var stl = nextBlockStyle ? ' style="' + nextBlockStyle + '"' : "";
+        html += "<p" + cls + stl + ">" + buffer.map(escapeHtml).join("<br>") + "</p>";
+        buffer = [];
+        isFirstBlock = false;
+        nextBlockStyle = "";
+      }
+
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+
+        var isRubricLike = (
+          /예수회 공통|공통:|성인 고유:|감사송:/.test(line) ||
+          (line.indexOf("감사송") > -1 && line.length < 40) ||
+          (line.indexOf("공통") > -1 && line.length < 40) ||
+          (line.indexOf("참조.") !== -1 && line.length < 40)
+        );
+
+        if (isRubricLike) {
+          flush();
+          nextBlockStyle = "";
+          html += '<p class="rubric" style="margin-top: 1.8em;">' + escapeHtml(line) + "</p>";
+          isFirstBlock = false;
+          continue;
+        }
+
+        if (isVerseSection) {
+          flush();
+          html += '<p class="verse">' + escapeHtml(line) + "</p>";
+          isFirstBlock = false;
+          continue;
+        }
+
+        if (
+          (line.indexOf("말씀입니다.") > -1 && line.indexOf("주님의 말씀입니다.") === -1) ||
+          line.charAt(0) === "✠" ||
+          line.charAt(0) === "▥"
+        ) {
+          flush();
+          var mt = nextBlockStyle ? nextBlockStyle + " " : "";
+          nextBlockStyle = "";
+          html += '<p style="' + mt + 'margin-bottom:0.1em;">' + escapeHtml(line) + "</p>";
+          isFirstBlock = false;
+          continue;
+        }
+
+        if (line.indexOf("주님의 말씀입니다.") === 0) {
+          flush();
+          html += '<p class="reading-outro">' + escapeHtml(line) + "</p>";
+          isFirstBlock = false;
+          continue;
+        }
+
+        if (/비나이다\.$/.test(line) || /다름없나이다\.$/.test(line)) {
+          buffer.push(line);
+          flush();
+          nextBlockStyle = "margin-top: 1.8em;";
+          continue;
+        }
+
+        buffer.push(line);
+      }
+
+      flush();
       return html;
     }
 
-    function renderMass(dateStr) {
-      const index = massData.findIndex(d => d.date === dateStr);
-      if(index === -1) return;
-      const data = massData[index];
-      
-      const prev = index > 0 ? massData[index - 1] : null;
-      const next = index < massData.length - 1 ? massData[index + 1] : null;
+    function getProprium(mmdd) {
+      var rows = DATA.rows.filter(function (r) { return r.date === mmdd; });
+      if (rows.length === 0) return null;
 
-      let html = '';
-      
-      // 1. 최상단 이전/다음 버튼
-      html += createNavHtml(prev, next);
+      var rawTitle = firstNonEmpty(rows, "title");
+      var rank = firstNonEmpty(rows, "rank");
+      var displayTitle = buildDisplayTitle(mmdd, rawTitle, rank);
+      var html = "<h1>" + escapeHtml(displayTitle) + "</h1>";
 
-      // 2. 미사 헤더
-      html += `<div class="mass-header">
-                 <div class="mass-date">${parseInt(data.date.substring(0,2))}월 ${parseInt(data.date.substring(2,4))}일</div>
-                 <h1 class="mass-title">${data.title}</h1>
-                 <div class="mass-rank">${data.rank}</div>
-               </div>`;
-      
-      // 3. 삽화 이미지 (./img/0731.webp)
-      html += `<div class="mass-art">
-                 <img src="./img/${data.date}.webp" onerror="this.style.display='none'" alt="${data.title} 삽화">
-               </div>`;
+      // 설명
+      var descRow = null;
+      for (var i = 0; i < rows.length; i++) {
+        if (rows[i].item === "설명") { descRow = rows[i]; break; }
+      }
+      if (descRow && descRow.content) {
+        html += formatParagraphsForLiturgy("설명", splitLines(descRow.content));
+      }
 
-      // 4. 구글 시트 항목들
-      const order = ['설명', '입당송', '본기도', '제1독서', '제2독서', '화답송', '부속가', '복음 환호송', '복음', '예물 기도', '영성체송', '영성체 후 기도'];
-      
-      order.forEach(item => {
-        if(data.items[item]) {
-          html += `<div class="mass-section">
-                     <div class="section-title">${item}</div>
-                     <div class="section-content">${data.items[item]}</div>
-                   </div>`;
+      // 전례 본문
+      rows.filter(function (r) { return r.item !== "설명" && r.content; }).forEach(function (r) {
+        var parsed = parseLiturgicalContent(r.item, r.content);
+        var titleHtml = "<h2><span class='item-name'>" + escapeHtml(r.item) + "</span>";
+        if (parsed.subtitle) {
+          var subClass = (r.item === "입당송" || r.item === "영성체송") ? "subtitle-small" : "subtitle-normal";
+          titleHtml += " <span class='" + subClass + "'>" + escapeHtml(parsed.subtitle) + "</span>";
         }
+        titleHtml += "</h2>";
+        html += titleHtml + "<hr class='item-divider'>" + formatParagraphsForLiturgy(r.item, parsed.lines);
       });
 
-      // 5. 최하단 이전/다음 버튼
-      html += createNavHtml(prev, next);
-
-      document.getElementById('content').innerHTML = html;
-      window.scrollTo(0, 0); 
+      return { title: displayTitle, body: html };
     }
 
-    function getTodayMMDD() {
-      const d = new Date();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return m + day;
+    /* ==========================================================
+       화면 그리기
+       ========================================================== */
+    var ORNAMENT_SRC =
+      "/.netlify/images?url=/img/frontispiece.png&w=1120&h=290&fit=cover&position=top&fm=webp";
+
+    function navCardHtml(info, dir) {
+      var cls = "nav-card " + dir;
+      var dirLabel = (dir === "prev") ? "← 이전" : "다음 →";
+      if (!info) {
+        return '<span class="' + cls + ' disabled"><span class="nav-dir">' + dirLabel +
+               '</span><span class="nav-date">없음</span></span>';
+      }
+      return '<a class="' + cls + '" data-date="' + info.date + '" href="?date=' + info.date + '">' +
+             '<span class="nav-dir">' + dirLabel + '</span>' +
+             '<span class="nav-date">' + escapeHtml(info.label) + '</span>' +
+             (info.name ? '<span class="nav-name">(' + escapeHtml(info.name) + ')</span>' : "") +
+             "</a>";
     }
 
-    window.addEventListener('popstate', route);
-    init();
+    function emptyStateHtml(date, prev, next) {
+      var html = '<div class="empty-state ui-font"><div class="empty-symbol">✠</div>' +
+        '<div class="empty-date">' + escapeHtml(formatMonthDay(date)) + "</div>" +
+        '<div class="empty-message">이 날짜에는 예정된 예수회 고유미사가 없습니다.</div>' +
+        '<div class="empty-links">';
+      if (next) html += '<a class="empty-link" data-date="' + next.date + '" href="?date=' + next.date + '">다음 고유미사 →</a>';
+      if (prev) html += '<a class="empty-link" data-date="' + prev.date + '" href="?date=' + prev.date + '">← 이전 고유미사</a>';
+      html += '<a class="empty-link" data-view="list" href="?view=list">전체 목록 보기</a>';
+      return html + "</div></div>";
+    }
+
+    /* 전체 목록: 달별로 묶어 한 해의 고유미사를 모두 보여 줍니다 */
+    function listHtml() {
+      var today = todayMMDD();
+      var upcoming = getDefaultDate(today, DATA.dates);
+
+      var html = '<div class="list-head">' +
+        '<img class="ornament" src="' + ORNAMENT_SRC + '" alt="" width="1120" height="290" decoding="async">' +
+        '<h1 class="list-title">예수회 고유미사</h1>' +
+        '<div class="list-sub ui-font">모두 ' + DATA.dates.length +
+        '일 · 날짜를 누르시면 그날의 고유미사가 펼쳐집니다</div>' +
+        "</div>";
+
+      var openMonth = false;
+      for (var i = 0; i < DATA.dates.length; i++) {
+        var date = DATA.dates[i];
+        var month = Number(date.substring(0, 2));
+
+        if (i === 0 || month !== Number(DATA.dates[i - 1].substring(0, 2))) {
+          if (openMonth) html += "</div>";
+          html += '<div class="month"><h2 class="month-name">' + month + "월</h2>";
+          openMonth = true;
+        }
+
+        var info = DATA.info[date] || { title: "", rank: "" };
+        var tag = "";
+        if (date === today) tag = '<span class="tag ui-font">오늘</span>';
+        else if (date === upcoming) tag = '<span class="tag ui-font">다가오는</span>';
+
+        // 여러 성인을 함께 기념하는 날은 첫 축일명만 적고 나머지는 수로 알립니다.
+        var parts = String(info.title).split(/\s*;\s*/).filter(function (p) { return p.length > 0; });
+        var shortTitle = parts.length > 0 ? parts[0] : info.title;
+        var more = (parts.length > 1)
+          ? '<span class="entry-more ui-font">외 ' + (parts.length - 1) + "</span>"
+          : "";
+
+        html += '<a class="entry' + (date === today ? " is-today" : "") +
+          '" data-date="' + date + '" href="?date=' + date + '" title="' + escapeHtml(info.title) + '">' +
+          '<span class="entry-date ui-font">' + escapeHtml(formatMonthDay(date)) + "</span>" +
+          '<span class="entry-title">' + escapeHtml(shortTitle) + more + tag + "</span>" +
+          (info.rank ? '<span class="entry-rank ui-font">' + escapeHtml(info.rank) + "</span>" : "") +
+          "</a>";
+      }
+      if (openMonth) html += "</div>";
+
+      return html;
+    }
+
+    function setNotice(text) {
+      var el = document.getElementById("notice");
+      if (el) el.textContent = text || "";
+    }
+
+    function setToolbar(view) {
+      var home = document.querySelector(".nav-button[data-home]");
+      var list = document.querySelector('.nav-button[data-view="list"]');
+      if (home) home.classList.toggle("home", view !== "list");
+      if (list) list.classList.toggle("active", view === "list");
+    }
+
+    function stateToUrl(state, home) {
+      if (home) return window.location.pathname;
+      if (state.view === "list") return "?view=list";
+      return "?date=" + state.date;
+    }
+
+    function render(state, opts) {
+      opts = opts || {};
+      currentState = state;
+
+      var navHtml = "";
+      var title = "예수회 고유미사";
+
+      if (state.view === "list") {
+        document.getElementById("book").innerHTML = listHtml();
+        title = "전체 목록 — 예수회 고유미사";
+      } else {
+        var prevDate = getPrevDate(state.date, DATA.dates);
+        var nextDate = getNextDate(state.date, DATA.dates);
+        if (prevDate === state.date) prevDate = null; // 고유미사가 하나뿐인 경우
+        if (nextDate === state.date) nextDate = null;
+        var prev = buildNavInfo(prevDate);
+        var next = buildNavInfo(nextDate);
+
+        var proprium = getProprium(state.date);
+        document.getElementById("book").innerHTML =
+          proprium ? proprium.body : emptyStateHtml(state.date, prev, next);
+        navHtml = navCardHtml(prev, "prev") + navCardHtml(next, "next");
+        if (proprium) title = proprium.title;
+      }
+
+      document.getElementById("nav-top").innerHTML = navHtml;
+      document.getElementById("nav-bottom").innerHTML = navHtml;
+      document.title = title;
+      setToolbar(state.view);
+
+      if (opts.push) {
+        try {
+          window.history.pushState(state, "", stateToUrl(state, opts.home));
+        } catch (e) {}
+      }
+      if (opts.scroll) window.scrollTo(0, 0);
+    }
+
+    function defaultState() {
+      return { view: "day", date: getDefaultDate(todayMMDD(), DATA.dates) };
+    }
+
+    function initialState() {
+      var params = null;
+      try { params = new URLSearchParams(window.location.search); } catch (e) {}
+      if (params && params.get("view") === "list") return { view: "list" };
+
+      var q = params ? (params.get("date") || "") : "";
+      return isValidMMDD(q) ? { view: "day", date: q } : defaultState();
+    }
+
+    /* ==========================================================
+       이동 (새로고침 없이 바로 전환)
+       ========================================================== */
+    document.addEventListener("click", function (e) {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var a = e.target.closest ? e.target.closest("a[data-date], a[data-home], a[data-view]") : null;
+      if (!a || !DATA) return;
+
+      e.preventDefault();
+      if (a.hasAttribute("data-home")) {
+        render(defaultState(), { push: true, home: true, scroll: true });
+      } else if (a.hasAttribute("data-view")) {
+        render({ view: a.getAttribute("data-view") }, { push: true, scroll: true });
+      } else {
+        render({ view: "day", date: a.getAttribute("data-date") }, { push: true, scroll: true });
+      }
+    });
+
+    window.addEventListener("popstate", function () {
+      if (DATA) render(initialState(), { scroll: true });
+    });
+
+    /* ==========================================================
+       불러오기
+       먼저 이 기기에 저장해 둔 내용을 보여 주고, 그동안 새 자료를 받아 옵니다.
+       ========================================================== */
+    function showStatus(html) {
+      document.getElementById("book").innerHTML = '<div class="status ui-font">' + html + "</div>";
+      document.getElementById("nav-top").innerHTML = "";
+      document.getElementById("nav-bottom").innerHTML = "";
+    }
+
+    function showError(msg) {
+      showStatus(msg + '<br><button type="button" class="retry" id="retry">다시 시도</button>');
+      var b = document.getElementById("retry");
+      if (b) b.addEventListener("click", function () { window.location.reload(); });
+    }
+
+    function readCache() {
+      try { return window.localStorage.getItem(CACHE_KEY); } catch (e) { return null; }
+    }
+    function writeCache(text) {
+      try { window.localStorage.setItem(CACHE_KEY, text); } catch (e) {}
+    }
+
+    function readAsCsv(res) {
+      if (!res.ok) throw new Error("http " + res.status);
+      return res.text().then(function (text) {
+        if (/^\s*<(!doctype|html)/i.test(text)) throw new Error("not csv");
+        return text;
+      });
+    }
+
+    /* 사이트의 자료 주소를 먼저 쓰고, 안 되면 구글 시트를 직접 읽습니다 */
+    function fetchCsv() {
+      return fetch(DATA_URL, { cache: "no-store" })
+        .then(readAsCsv)
+        .catch(function (err) {
+          if (typeof CSV_URL !== "string" || CSV_URL.indexOf("http") !== 0) throw err;
+          return fetch(CSV_URL, { cache: "no-store" }).then(readAsCsv);
+        });
+    }
+
+    function start(csvText, isRefresh) {
+      var data = buildData(csvText);
+      if (data.rows.length === 0) throw new Error("empty");
+      DATA = data;
+      render(isRefresh && currentState ? currentState : initialState(), {});
+    }
+
+    function load() {
+      var cached = readCache();
+      var showedCache = false;
+      if (cached) {
+        try { start(cached, false); showedCache = true; } catch (e) {}
+      }
+
+      fetchCsv()
+        .then(function (text) {
+          setNotice("");
+          if (text === cached && showedCache) return;
+          start(text, showedCache);
+          writeCache(text);
+        })
+        .catch(function () {
+          if (showedCache) {
+            setNotice("자료를 새로 불러오지 못해, 이 기기에 저장해 둔 내용을 보여 드리고 있습니다.");
+          } else {
+            showError("내용을 불러오지 못했습니다.<br>인터넷 연결을 확인하고 다시 시도해 주세요.");
+          }
+        });
+    }
+
+    load();
+  })();
   </script>
 </body>
 </html>
