@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>예수회 고유미사</title>
-  <meta name="description" content="예수회 고유미사. 그날 미사의 고유 부분 — 입당송, 본기도, 독서와 복음, 예물기도, 영성체송, 영성체 후 기도 — 을 읽기 좋게 보여 드립니다.">
+  <meta name="description" content="예수회 고유미사(Proprium Missarum Societatis Iesu). 그날 미사의 고유 부분 — 입당송, 본기도, 독서와 복음, 예물기도, 영성체송, 영성체 후 기도 — 을 읽기 좋게 보여 드립니다.">
   <meta name="theme-color" content="#f8f5ed">
   <meta name="color-scheme" content="light">
   <meta name="apple-mobile-web-app-title" content="고유미사">
@@ -56,11 +56,11 @@
       --white: #fffdf8;
 
       /* 본문 기본 글자 크기 (JS가 글자 크기 단계에 맞춰 바꿈) */
-      --base: 16px;
+      --base: 18px;
     }
 
     @media (max-width: 600px) {
-      :root { --base: 17px; }
+      :root { --base: 19px; }
     }
 
     * { box-sizing: border-box; }
@@ -518,10 +518,10 @@
        ====================================================== -->
   <script>
     (function () {
-      var STEPS = [10, 11, 12, 13, 14, 15, 16, 18, 19, 21, 23, 25, 28, 32];   // 글자 크기 단계(px)
+      var STEPS = [13, 14, 15, 16, 18, 19, 21, 23, 25, 28, 32];   // 글자 크기 단계(px)
       var KEY = "proprium-font-step";
 
-      function defaultIdx() { return (window.innerWidth <= 600) ? 7 : 6; } // 모바일 19px, PC 18px
+      function defaultIdx() { return (window.innerWidth <= 600) ? 5 : 4; } // 모바일 19px, PC 18px
       function valid(n) { return typeof n === "number" && n >= 0 && n < STEPS.length && n === Math.floor(n); }
       function stored() {
         try {
@@ -596,7 +596,7 @@
       <img class="footer-mark" alt=""
            src="img/ihs-emblem.png"
            width="36" height="36" loading="lazy" decoding="async">
-      <div>예수회 고유미사</div>
+      <div>예수회 고유미사 · Proprium Missarum Societatis Iesu</div>
     </div>
   </main>
 
@@ -991,9 +991,9 @@
       var html = '<div class="list-head">' +
         '<img class="ornament" src="' + ORNAMENT_SRC + '" alt="" width="1120" height="290" decoding="async">' +
         '<h1 class="list-title">예수회 고유미사</h1>' +
-        '<div class="list-sub ui-font">' +
-        '날짜를 누르시면 그날의 고유미사가 펼쳐집니다</div>' +
-        '</div>';
+        '<div class="list-sub ui-font">모두 ' + DATA.dates.length +
+        '일 · 날짜를 누르시면 그날의 고유미사가 펼쳐집니다</div>' +
+        "</div>";
 
       var openMonth = false;
       for (var i = 0; i < DATA.dates.length; i++) {
