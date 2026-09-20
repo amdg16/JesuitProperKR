@@ -854,7 +854,11 @@
           continue;
         }
 
-        if (/비나이다\.$/.test(line) || /다름없나이다\.$/.test(line)) {
+        if (
+          /비나이다\.$/.test(line) ||
+          /다름없나이다\.$/.test(line) ||
+          /옳은 일입니다\.$/.test(line)
+        ) {
           buffer.push(line);
           flush();
           nextBlockStyle = "margin-top: 1.8em;";
