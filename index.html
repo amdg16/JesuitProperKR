@@ -4,69 +4,95 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>예수회 고유미사</title>
+  <!-- 미사 경본 느낌의 명조체 폰트 불러오기 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --font-size: 16px;
-      --primary-color: #b30000;
+      --primary-color: #a71930; /* 예수회 특유의 붉은색 포인트 */
+      --bg-color: #fdfcf0; /* 미사 경본 종이색 느낌 */
     }
     body {
-      font-family: 'KoPub Batang', 'Malgun Gothic', serif;
+      font-family: 'Nanum Myeongjo', 'KoPub Batang', serif;
       font-size: var(--font-size);
-      line-height: 1.6;
-      max-width: 800px;
-      margin: 0 auto;
+      line-height: 1.8;
+      background-color: #ebebeb; /* 바깥쪽 회색 배경 */
+      margin: 0;
       padding: 20px;
-      color: #333;
+      color: #222;
     }
+    #app-container {
+      max-width: 700px;
+      margin: 0 auto;
+      background-color: var(--bg-color);
+      padding: 40px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1); /* 책 같은 그림자 효과 */
+      border-radius: 4px;
+    }
+    
     /* 상단 도구줄 */
     #toolbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: #f8f9fa;
+      background: #fff;
       padding: 10px 15px;
       border-radius: 8px;
-      margin-bottom: 20px;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
     .btn-group button {
-      padding: 5px 10px;
+      font-family: 'Nanum Myeongjo', serif;
+      padding: 6px 12px;
       margin-right: 5px;
       cursor: pointer;
-      border: 1px solid #ccc;
-      background: #fff;
+      border: 1px solid #ddd;
+      background: #fafafa;
       border-radius: 4px;
+      font-size: 14px;
     }
-    .btn-group button:hover { background: #e9ecef; }
+    .btn-group button:hover { background: #eee; }
     
-    /* 미사 본문 스타일 */
-    .mass-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; }
-    .mass-date { font-size: 1.1em; color: #666; }
-    .mass-title { font-size: 1.8em; font-weight: bold; color: var(--primary-color); margin: 5px 0; }
-    .mass-rank { font-size: 1em; font-weight: bold; }
+    /* 미사 본문 제목 스타일 */
+    .mass-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid var(--primary-color); padding-bottom: 20px; }
+    .mass-date { font-size: 1.1em; color: #555; margin-bottom: 5px; }
+    .mass-title { font-size: 2em; font-weight: bold; color: var(--primary-color); margin: 0; line-height: 1.3; }
+    .mass-rank { font-size: 1em; font-weight: bold; margin-top: 10px; color: #444; }
     
-    .mass-section { margin-bottom: 25px; }
-    .section-title { font-weight: bold; color: var(--primary-color); margin-bottom: 10px; font-size: 1.1em; }
-    .section-content { white-space: pre-wrap; text-align: justify; }
+    /* 삽화 이미지 */
+    .mass-art { text-align: center; margin-bottom: 30px; }
+    .mass-art img { max-width: 100%; height: auto; border-radius: 4px; border: 1px solid #ddd; }
+    
+    .mass-section { margin-bottom: 30px; }
+    .section-title { font-weight: bold; color: var(--primary-color); margin-bottom: 12px; font-size: 1.15em; border-left: 3px solid var(--primary-color); padding-left: 10px; }
+    
+    /* 칭찬해주신 정렬 유지! (양쪽 정렬 및 단어 안 끊어지게) */
+    .section-content { white-space: pre-wrap; text-align: justify; word-break: keep-all; }
     
     /* 하단 이동 단추 */
-    #nav-buttons { display: flex; justify-content: space-between; margin-top: 30px; border-top: 1px solid #ddd; padding-top: 20px; }
+    #nav-buttons { display: flex; justify-content: space-between; margin-top: 50px; border-top: 1px solid #ddd; padding-top: 20px; }
+    #nav-buttons button { font-family: 'Nanum Myeongjo', serif; padding: 10px 20px; background: #fff; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-size: 1em; }
+    #nav-buttons button:hover { background: #f0f0f0; }
     
     /* 목록 뷰 스타일 */
-    .list-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; gap: 15px; cursor: pointer; }
-    .list-item:hover { background: #f9f9f9; }
-    .list-date { font-weight: bold; color: var(--primary-color); min-width: 60px; }
-    .list-today { background: #fff3cd; }
+    .list-item { padding: 15px; border-bottom: 1px solid #e0e0e0; display: flex; gap: 20px; cursor: pointer; align-items: center; }
+    .list-item:hover { background: #f5f4e8; }
+    .list-date { font-weight: bold; color: var(--primary-color); min-width: 60px; font-size: 1.1em; }
+    .list-today { background: #fff9e6; border-left: 4px solid var(--primary-color); padding-left: 11px; }
 
-    /* 인쇄 시 도구줄 및 이동 단추 숨기기 */
+    /* 인쇄 모드 - 인쇄 버튼을 누르면 군더더기 없이 출력됨 */
     @media print {
+      body { background-color: #fff; padding: 0; }
+      #app-container { box-shadow: none; padding: 0; max-width: 100%; }
       #toolbar, #nav-buttons, .list-view { display: none !important; }
-      body { font-size: 12pt; max-width: 100%; padding: 0; }
       .mass-section { page-break-inside: avoid; }
     }
   </style>
 </head>
 <body>
-
+<div id="app-container">
   <!-- 상단 도구줄 -->
   <div id="toolbar">
     <div class="btn-group">
@@ -82,22 +108,19 @@
 
   <!-- 메인 콘텐츠가 표시될 영역 -->
   <div id="content">데이터를 불러오는 중입니다...</div>
+</div>
 
   <script>
-    // 알려주신 구글 시트 주소가 적용된 부분입니다.
+    // 구글 시트 직통 링크
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSys6L2_-iAq7pmuS4puUKdWBpVAKk_-TycRZmxVOGHMpUyg0EyeLJzXhxUWevrtZoNETyyjzwPHk68/pub?gid=1700621661&single=true&output=csv";
-    
     let massData = []; 
 
-    // 초기화 및 글자 크기 설정
     function init() {
       const savedSize = localStorage.getItem('mass-font-size');
       if(savedSize) document.documentElement.style.setProperty('--font-size', savedSize + 'px');
-      
       fetchData();
     }
 
-    // 글자 크기 조절
     function adjustFontSize(delta) {
       if(delta === 0) {
         localStorage.removeItem('mass-font-size');
@@ -110,7 +133,6 @@
       localStorage.setItem('mass-font-size', newSize);
     }
 
-    // 구글 시트 CSV 불러오기 및 파싱
     async function fetchData() {
       try {
         const response = await fetch(CSV_URL);
@@ -123,37 +145,37 @@
       }
     }
 
-    function parseCSVToData(csv) {
-      const rows = [];
-      let row = [], inQuotes = false, curr = '';
-      for (let i = 0; i < csv.length; i++) {
-        const char = csv[i], next = csv[i+1];
-        if (char === '"' && inQuotes && next === '"') { curr += '"'; i++; }
-        else if (char === '"') { inQuotes = !inQuotes; }
-        else if (char === ',' && !inQuotes) { row.push(curr.trim()); curr = ''; }
-        else if (char === '\n' && !inQuotes) { row.push(curr.trim()); rows.push(row); row = []; curr = ''; }
-        else if (char !== '\r') { curr += char; }
+    // 💡 더욱 강력해진 CSV 파서 (줄바꿈, 쉼표 완벽 인식)
+    function parseCSVToData(text) {
+      let p = '', row = [''], rows = [row], i = 0, r = 0, s = !0, l;
+      for (l of text) {
+          if ('"' === l) {
+              if (s && l === p) row[i] += l;
+              s = !s;
+          } else if (',' === l && s) l = row[++i] = '';
+          else if ('\n' === l && s) {
+              if ('\r' === p) row[i] = row[i].slice(0, -1);
+              row = rows[++r] = [l = '']; i = 0;
+          } else row[i] += l;
+          p = l;
       }
-      if(curr) row.push(curr.trim());
-      if(row.length > 0) rows.push(row);
 
       const dataMap = {};
       rows.slice(1).forEach(r => {
         if(r.length < 5) return;
         let [dateRaw, title, rank, item, content] = r;
-        if(!dateRaw || !content) return;
+        if(!dateRaw || !content || content.trim() === '') return;
         
-        // 날짜를 0731 형태로 통일
         let mmdd = dateRaw.replace(/[^0-9]/g, '');
         if(mmdd.length === 3) mmdd = '0' + mmdd;
+        if(mmdd.length !== 4) return;
 
         if(!dataMap[mmdd]) dataMap[mmdd] = { date: mmdd, title, rank, items: {} };
-        dataMap[mmdd].items[item] = content;
+        dataMap[mmdd].items[item.trim()] = content.trim();
       });
       massData = Object.values(dataMap).sort((a, b) => a.date.localeCompare(b.date));
     }
 
-    // 화면 라우팅 (url 주소 변경 감지)
     function route() {
       const params = new URLSearchParams(window.location.search);
       const view = params.get('view');
@@ -173,21 +195,20 @@
       route();
     }
 
-    // 전체 목록 화면
     function renderList() {
       const today = getTodayMMDD();
-      let html = '<h2>전체 목록</h2><div class="list-view">';
+      let html = '<h2 style="color:var(--primary-color); border-bottom:2px solid; padding-bottom:10px;">전체 목록</h2><div class="list-view">';
       
       massData.forEach(d => {
         const isPast = d.date < today;
         const isToday = d.date === today;
         const bgClass = isToday ? 'list-today' : '';
-        const opStyle = isPast ? 'opacity: 0.6;' : '';
+        const opStyle = isPast ? 'opacity: 0.5;' : '';
         html += `<div class="list-item ${bgClass}" style="${opStyle}" onclick="navigate('date', '${d.date}')">
                    <div class="list-date">${d.date.substring(0,2)}/${d.date.substring(2,4)}</div>
                    <div>
-                     <div style="font-weight:bold;">${d.title}</div>
-                     <div style="font-size:0.9em; color:#666;">${d.rank}</div>
+                     <div style="font-weight:bold; font-size:1.1em;">${d.title}</div>
+                     <div style="font-size:0.9em; color:#777;">${d.rank}</div>
                    </div>
                  </div>`;
       });
@@ -195,7 +216,6 @@
       document.getElementById('content').innerHTML = html;
     }
 
-    // 다가오는/오늘 미사 
     function renderUpcomingMass() {
       const today = getTodayMMDD();
       const upcoming = massData.find(d => d.date >= today) || massData[0];
@@ -203,7 +223,6 @@
       else document.getElementById('content').innerHTML = "표시할 데이터가 없습니다.";
     }
 
-    // 특정 날짜 미사 화면
     function renderMass(dateStr) {
       const index = massData.findIndex(d => d.date === dateStr);
       if(index === -1) {
@@ -214,12 +233,17 @@
       
       let html = `<div class="mass-header">
                     <div class="mass-date">${data.date.substring(0,2)}월 ${data.date.substring(2,4)}일</div>
-                    <div class="mass-title">${data.title}</div>
+                    <h1 class="mass-title">${data.title}</h1>
                     <div class="mass-rank">${data.rank}</div>
                   </div>`;
       
-      // 구글 시트 항목(열) 순서
-      const order = ['설명', '입당송', '본기도', '제1독서', '화답송', '복음 환호송', '복음', '예물 기도', '영성체송', '영성체 후 기도'];
+      // 삽화 이미지 (img 폴더 안의 webp 파일)
+      html += `<div class="mass-art">
+                 <img src="img/${data.date}.webp" onerror="this.style.display='none'" alt="${data.title} 삽화">
+               </div>`;
+
+      // 구글 시트 항목 순서 정리 (부속가, 제2독서 등 추가)
+      const order = ['설명', '입당송', '본기도', '제1독서', '제2독서', '화답송', '부속가', '복음 환호송', '복음', '예물 기도', '영성체송', '영성체 후 기도'];
       
       order.forEach(item => {
         if(data.items[item]) {
@@ -230,15 +254,17 @@
         }
       });
 
+      // 이전/다음 버튼 계산 로직
       const prev = index > 0 ? massData[index - 1] : null;
       const next = index < massData.length - 1 ? massData[index + 1] : null;
       
       html += `<div id="nav-buttons">`;
-      html += prev ? `<button onclick="navigate('date', '${prev.date}')">← 이전: ${prev.title}</button>` : `<div></div>`;
-      html += next ? `<button onclick="navigate('date', '${next.date}')">다음: ${next.title} →</button>` : `<div></div>`;
+      html += prev ? `<button onclick="navigate('date', '${prev.date}')">← 이전 축일</button>` : `<div></div>`;
+      html += next ? `<button onclick="navigate('date', '${next.date}')">다음 축일 →</button>` : `<div></div>`;
       html += `</div>`;
 
       document.getElementById('content').innerHTML = html;
+      window.scrollTo(0, 0); // 화면 넘어가면 맨 위로 스크롤
     }
 
     function getTodayMMDD() {
