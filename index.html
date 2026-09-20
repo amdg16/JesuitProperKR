@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>예수회 고유미사</title>
-  <meta name="description" content="예수회 고유미사(Proprium Missarum Societatis Iesu). 그날 미사의 고유 부분 — 입당송, 본기도, 독서와 복음, 예물기도, 영성체송, 영성체 후 기도 — 을 읽기 좋게 보여 드립니다.">
+  <meta name="description" content="예수회 고유미사. 그날 미사의 고유 부분 — 입당송, 본기도, 독서와 복음, 예물기도, 영성체송, 영성체 후 기도 — 을 읽기 좋게 보여 드립니다.">
   <meta name="theme-color" content="#f8f5ed">
   <meta name="color-scheme" content="light">
   <meta name="apple-mobile-web-app-title" content="고유미사">
@@ -26,24 +26,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600&amp;display=swap">
 
-  <!-- ======================================================
-       ★ 설정 ★
-       DATA_URL : 이 사이트의 자료 주소. Netlify 함수가 구글 시트를 중계하고
-                  마지막으로 성공한 내용을 보관해 둡니다.
-       CSV_URL  : 함수를 쓸 수 없을 때 곧바로 읽을 구글 시트 CSV 주소
-                  (구글 시트 "웹에 게시"로 만든 주소)
-       ====================================================== -->
   <script>
     var DATA_URL = "/api/propers";
     var CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSys6L2_-iAq7pmuS4puUKdWBpVAKk_-TycRZmxVOGHMpUyg0EyeLJzXhxUWevrtZoNETyyjzwPHk68/pub?gid=1700621661&single=true&output=csv";
-    var TIMEZONE = "Asia/Seoul";   // 날짜 기준 시간대 (한국 시간)
-    var NAV_SHOW_RANK = false;     // 이전/다음 버튼에 "기념일/축일" 등급도 붙일지
+    var TIMEZONE = "Asia/Seoul";
+    var NAV_SHOW_RANK = false;
   </script>
 
   <style>
-    /* ======================================================
-       기본
-       ====================================================== */
     :root {
       --paper: #f8f5ed;
       --paper-dark: #eee9dc;
@@ -54,13 +44,11 @@
       --line: #d8d0c2;
       --rubric: #8b4d4d;
       --white: #fffdf8;
-
-      /* 본문 기본 글자 크기 (JS가 글자 크기 단계에 맞춰 바꿈) */
-      --base: 18px;
+      --base: 16px;
     }
 
     @media (max-width: 600px) {
-      :root { --base: 19px; }
+      :root { --base: 17px; }
     }
 
     * { box-sizing: border-box; }
@@ -95,9 +83,6 @@
       font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
     }
 
-    /* ======================================================
-       상단 도구줄
-       ====================================================== */
     .toolbar {
       display: flex;
       align-items: center;
@@ -152,9 +137,6 @@
     .size-btn:hover:not(:disabled) { background: var(--white); }
     .size-btn:disabled { opacity: 0.35; cursor: default; }
 
-    /* ======================================================
-       이전 / 다음 고유미사
-       ====================================================== */
     .navigation {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -188,9 +170,6 @@
     .nav-date { color: var(--accent); font-size: 15px; font-weight: 600; }
     .nav-name { color: var(--muted); font-size: 13px; word-break: keep-all; }
 
-    /* ======================================================
-       미사 본문 종이 (글자 크기는 em 단위 → --base 하나로 전체 조절)
-       ====================================================== */
     .book {
       position: relative;
       background: rgba(255,253,248,0.88);
@@ -265,26 +244,24 @@
 
     p.verse {
       margin: 0 0 0.3em;
-      font-size: 0.95em;
+      font-size: 1em;
       line-height: 1.8;
       text-align: left;
     }
 
+    .cross-mark { color: var(--rubric); }
+
     p.rubric {
       margin: 1.1em 0;
       color: var(--rubric);
-      font-size: 0.92em;
+      font-size: 1.02em;
       font-weight: 600;
       line-height: 1.7;
       text-align: left;
     }
 
-    /* "주님의 말씀입니다." — 본문과 같은 모양 */
     p.reading-outro { margin-top: 0; font-weight: normal; }
 
-    /* ======================================================
-       고유미사 없음 / 불러오는 중 / 오류
-       ====================================================== */
     .empty-state, .status {
       padding: 65px 20px;
       text-align: center;
@@ -334,14 +311,12 @@
       opacity: 0.7;
     }
 
-    /* ======================================================
-       모바일
-       ====================================================== */
     @media (max-width: 600px) {
       .page { padding: 12px 10px 40px; }
       .book { padding: 28px 18px 40px; }
       .book::before { left: 8px; top: 10px; bottom: 10px; }
       .book::after { right: 8px; top: 10px; bottom: 10px; }
+      p { text-align: left; }
       .navigation { gap: 8px; }
       .nav-card { padding: 8px 10px; }
       .nav-name { font-size: 12.5px; }
@@ -353,9 +328,6 @@
       .nav-button { padding: 6px 9px; font-size: 13px; }
     }
 
-    /* ======================================================
-       상단 도구줄 — 버튼 묶음
-       ====================================================== */
     .toolbar { flex-wrap: wrap; }
     .toolbar-group { display: inline-flex; gap: 8px; }
 
@@ -366,9 +338,6 @@
       font-weight: 600;
     }
 
-    /* ======================================================
-       알림 줄 (저장된 내용을 보여 줄 때)
-       ====================================================== */
     .notice {
       margin-bottom: 12px;
       padding: 9px 13px;
@@ -383,9 +352,6 @@
 
     .notice:empty { display: none; }
 
-    /* ======================================================
-       전체 목록
-       ====================================================== */
     .ornament {
       display: block;
       width: 100%;
@@ -480,9 +446,6 @@
       .entry-rank { flex: 0 0 auto; }
     }
 
-    /* ======================================================
-       인쇄 (미사 때 종이로 쓰실 수 있도록)
-       ====================================================== */
     @media print {
       :root { --base: 11.5pt; }
 
@@ -513,15 +476,12 @@
     }
   </style>
 
-  <!-- ======================================================
-       글자 크기 (먼저 실행해서 처음부터 원하는 크기로 그림)
-       ====================================================== -->
   <script>
     (function () {
-      var STEPS = [13, 14, 15, 16, 18, 19, 21, 23, 25, 28, 32];   // 글자 크기 단계(px)
+      var STEPS = [10, 11, 12, 13, 14, 15, 16, 18, 19, 21, 23, 25, 28, 32];
       var KEY = "proprium-font-step";
 
-      function defaultIdx() { return (window.innerWidth <= 600) ? 5 : 4; } // 모바일 19px, PC 18px
+      function defaultIdx() { return (window.innerWidth <= 600) ? 7 : 6; }
       function valid(n) { return typeof n === "number" && n >= 0 && n < STEPS.length && n === Math.floor(n); }
       function stored() {
         try {
@@ -596,7 +556,7 @@
       <img class="footer-mark" alt=""
            src="img/ihs-emblem.png"
            width="36" height="36" loading="lazy" decoding="async">
-      <div>예수회 고유미사 · Proprium Missarum Societatis Iesu</div>
+      <div>예수회 고유미사</div>
     </div>
   </main>
 
@@ -605,12 +565,9 @@
     "use strict";
 
     var CACHE_KEY = "proprium-csv-cache";
-    var DATA = null;           // { rows, dates, info }
-    var currentState = null;   // 지금 보고 있는 화면 { view: "day" | "list", date: "MMdd" }
+    var DATA = null;
+    var currentState = null;
 
-    /* ==========================================================
-       CSV 읽기 (따옴표 안의 줄바꿈·쉼표 처리)
-       ========================================================== */
     function parseCSV(text) {
       if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
       var rows = [], row = [], field = "", inQuotes = false;
@@ -636,7 +593,6 @@
       return rows;
     }
 
-    /* 시트의 날짜 칸을 "MMdd"로 통일: 0917 / 917 / 9/17 / 9월 17일 / 2026-09-17 / 9/17/2026 */
     function normalizeDate(v) {
       var s = String(v == null ? "" : v).trim();
       if (!s) return "";
@@ -661,7 +617,7 @@
 
     function buildData(csvText) {
       var table = parseCSV(csvText);
-      table.shift(); // 첫 행은 제목
+      table.shift();
 
       var rows = [];
       for (var i = 0; i < table.length; i++) {
@@ -689,9 +645,6 @@
       return { rows: rows, dates: Object.keys(set).sort(), info: info };
     }
 
-    /* ==========================================================
-       날짜 도우미 (MMdd 문자열)
-       ========================================================== */
     function todayMMDD() {
       var parts = new Intl.DateTimeFormat("en-US", {
         timeZone: TIMEZONE, month: "2-digit", day: "2-digit"
@@ -714,7 +667,6 @@
       return Number(mmdd.substring(0, 2)) + "월 " + Number(mmdd.substring(2, 4)) + "일";
     }
 
-    // 오늘(포함) 이후 가장 가까운 고유미사. 올해 남은 게 없으면 목록의 첫 날짜(=내년 첫 고유미사)
     function getDefaultDate(today, dates) {
       if (dates.length === 0) return today;
       for (var i = 0; i < dates.length; i++) {
@@ -747,9 +699,6 @@
       return { date: mmdd, label: formatMonthDay(mmdd), name: name };
     }
 
-    /* ==========================================================
-       고유미사 본문 만들기 (기존 Code.gs와 같은 규칙)
-       ========================================================== */
     function escapeHtml(text) {
       return String(text)
         .replace(/&/g, "&amp;")
@@ -757,6 +706,11 @@
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
+    }
+
+    // 줄 맨 앞의 ✙(감사송 등에서 쓰는 십자가) 기호를 빨간색으로 고정
+    function escapeHtmlWithCross(text) {
+      return escapeHtml(text).replace(/^(✙|✠)/, '<span class="cross-mark">$1</span>');
     }
 
     function firstNonEmpty(rows, key) {
@@ -777,7 +731,6 @@
         .filter(function (l) { return l.length > 0; });
     }
 
-    // "제1독서(부활시기)", "화답송(부활시기)" 같은 접미사 항목을 원래 항목과 같게 취급
     function baseItemName(itemName) {
       return String(itemName || "").replace(/\s*[（(].*?[)）]\s*$/, "").trim();
     }
@@ -787,7 +740,6 @@
       var lines = splitLines(text);
       var subtitle = "";
 
-      // 입당송 / 영성체송
       if (baseName === "입당송" || baseName === "영성체송") {
         var refMatch = lines.length > 0
           ? lines[0].match(/^([^\s]+ \d+[0-9a-zA-Z가-힣,.\-()]*\s*(?:참조)?)\s+(.*)/)
@@ -805,7 +757,6 @@
         }
       }
 
-      // 제1독서 / 제2독서 / 복음 (부활시기 등 접미사 포함)
       else if (baseName === "제1독서" || baseName === "제2독서" || baseName === "복음") {
         var match = lines.length > 0 ? lines[0].match(/^[<〈](.*?)[>〉](.*)/) : null;
         if (match) {
@@ -818,7 +769,6 @@
         }
       }
 
-      // 화답송 / 복음 환호송 (부활시기 등 접미사 포함)
       else if (baseName === "화답송" || baseName === "복음 환호송") {
         if (lines.length > 0 && lines[0].charAt(0) !== "◎" && lines[0].charAt(0) !== "○") {
           subtitle = lines[0];
@@ -826,7 +776,6 @@
         }
       }
 
-      // 불필요한 숫자 제거
       lines = lines.map(function (l) { return l.replace(/(말씀입니다\.)\s*[0-9]+\s*$/, "$1"); });
       lines = lines.filter(function (l) { return !/^[0-9]+$/.test(l); });
 
@@ -872,7 +821,7 @@
 
         if (isVerseSection) {
           flush();
-          html += '<p class="verse">' + escapeHtml(line) + "</p>";
+          html += '<p class="verse">' + escapeHtmlWithCross(line) + "</p>";
           isFirstBlock = false;
           continue;
         }
@@ -920,7 +869,6 @@
       var displayTitle = buildDisplayTitle(mmdd, rawTitle, rank);
       var html = "<h1>" + escapeHtml(displayTitle) + "</h1>";
 
-      // 설명
       var descRow = null;
       for (var i = 0; i < rows.length; i++) {
         if (rows[i].item === "설명") { descRow = rows[i]; break; }
@@ -929,7 +877,6 @@
         html += formatParagraphsForLiturgy("설명", splitLines(descRow.content));
       }
 
-      // 전례 본문 (대영광송·신경처럼 내용이 비어도 행 자체가 "이 미사에 포함됨" 표시인 항목은 이름만 노출)
       rows.filter(function (r) {
         if (r.item === "설명") return false;
         if (r.content) return true;
@@ -953,9 +900,6 @@
       return { title: displayTitle, body: html };
     }
 
-    /* ==========================================================
-       화면 그리기
-       ========================================================== */
     var ORNAMENT_SRC = "img/frontispiece.png";
 
     function navCardHtml(info, dir) {
@@ -983,7 +927,6 @@
       return html + "</div></div>";
     }
 
-    /* 전체 목록: 달별로 묶어 한 해의 고유미사를 모두 보여 줍니다 */
     function listHtml() {
       var today = todayMMDD();
       var upcoming = getDefaultDate(today, DATA.dates);
@@ -991,9 +934,9 @@
       var html = '<div class="list-head">' +
         '<img class="ornament" src="' + ORNAMENT_SRC + '" alt="" width="1120" height="290" decoding="async">' +
         '<h1 class="list-title">예수회 고유미사</h1>' +
-        '<div class="list-sub ui-font">모두 ' + DATA.dates.length +
-        '일 · 날짜를 누르시면 그날의 고유미사가 펼쳐집니다</div>' +
-        "</div>";
+        '<div class="list-sub ui-font">' +
+        '날짜를 누르시면 그날의 고유미사가 펼쳐집니다</div>' +
+        '</div>';
 
       var openMonth = false;
       for (var i = 0; i < DATA.dates.length; i++) {
@@ -1011,7 +954,6 @@
         if (date === today) tag = '<span class="tag ui-font">오늘</span>';
         else if (date === upcoming) tag = '<span class="tag ui-font">다가오는</span>';
 
-        // 여러 성인을 함께 기념하는 날은 첫 축일명만 적고 나머지는 수로 알립니다.
         var parts = String(info.title).split(/\s*;\s*/).filter(function (p) { return p.length > 0; });
         var shortTitle = parts.length > 0 ? parts[0] : info.title;
         var more = (parts.length > 1)
@@ -1061,7 +1003,7 @@
       } else {
         var prevDate = getPrevDate(state.date, DATA.dates);
         var nextDate = getNextDate(state.date, DATA.dates);
-        if (prevDate === state.date) prevDate = null; // 고유미사가 하나뿐인 경우
+        if (prevDate === state.date) prevDate = null;
         if (nextDate === state.date) nextDate = null;
         var prev = buildNavInfo(prevDate);
         var next = buildNavInfo(nextDate);
@@ -1099,9 +1041,6 @@
       return isValidMMDD(q) ? { view: "day", date: q } : defaultState();
     }
 
-    /* ==========================================================
-       이동 (새로고침 없이 바로 전환)
-       ========================================================== */
     document.addEventListener("click", function (e) {
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       var a = e.target.closest ? e.target.closest("a[data-date], a[data-home], a[data-view]") : null;
@@ -1121,10 +1060,6 @@
       if (DATA) render(initialState(), { scroll: true });
     });
 
-    /* ==========================================================
-       불러오기
-       먼저 이 기기에 저장해 둔 내용을 보여 주고, 그동안 새 자료를 받아 옵니다.
-       ========================================================== */
     function showStatus(html) {
       document.getElementById("book").innerHTML = '<div class="status ui-font">' + html + "</div>";
       document.getElementById("nav-top").innerHTML = "";
@@ -1152,7 +1087,6 @@
       });
     }
 
-    /* 사이트의 자료 주소를 먼저 쓰고, 안 되면 구글 시트를 직접 읽습니다 */
     function fetchCsv() {
       return fetch(DATA_URL, { cache: "no-store" })
         .then(readAsCsv)
