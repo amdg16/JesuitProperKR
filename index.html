@@ -834,7 +834,15 @@
           flush();
           var mt = nextBlockStyle ? nextBlockStyle + " " : "";
           nextBlockStyle = "";
-          html += '<p style="' + mt + 'margin-bottom:0.1em;">' + escapeHtml(line) + "</p>";
+          var introLine = line;
+          if (
+            (baseName === "제1독서" || baseName === "제2독서") &&
+            introLine.charAt(0) !== "▥" &&
+            introLine.charAt(0) !== "✠"
+          ) {
+            introLine = "▥ " + introLine;
+          }
+          html += '<p style="' + mt + 'margin-bottom:0.1em;">' + escapeHtml(introLine) + "</p>";
           isFirstBlock = false;
           continue;
         }
