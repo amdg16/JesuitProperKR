@@ -8,7 +8,7 @@
   <meta name="description" content="예수회 고유미사. 그날 미사의 고유 부분 — 입당송, 본기도, 독서와 복음, 예물기도, 영성체송, 영성체 후 기도 — 을 읽기 좋게 보여 드립니다.">
   <meta name="theme-color" content="#f8f5ed">
   <meta name="color-scheme" content="light">
-  <meta name="apple-mobile-web-app-title" content="고유미사">
+  <meta name="apple-mobile-web-app-title" content="예수회 고유미사">
   <meta property="og:type" content="website">
   <meta property="og:title" content="예수회 고유미사">
   <meta property="og:description" content="그날의 예수회 고유미사를 펼쳐 보는 곳.">
@@ -21,7 +21,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="고유미사">
+  <meta name="apple-mobile-web-app-title" content="예수회 고유미사">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600&amp;display=swap">
@@ -879,7 +879,9 @@
       var rawTitle = firstNonEmpty(rows, "title");
       var rank = firstNonEmpty(rows, "rank");
       var displayTitle = buildDisplayTitle(mmdd, rawTitle, rank);
-      var html = "<h1>" + escapeHtml(displayTitle) + "</h1>";
+      var html = "<h1>" + escapeHtml(displayTitle) +
+        (mmdd === todayMMDD() ? ' <span class="tag ui-font">오늘</span>' : "") +
+        "</h1>";
 
       var descRow = null;
       for (var i = 0; i < rows.length; i++) {
