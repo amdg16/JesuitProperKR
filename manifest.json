@@ -1,6 +1,6 @@
 {
   "name": "예수회 고유미사",
-  "short_name": "고유미사",
+  "short_name": "예수회 고유미사",
   "description": "Proprium Missarum Societatis Iesu — 예수회 고유 전례력의 그날 미사 고유 부분을 보여 주는 웹 페이지",
   "start_url": "./index.html",
   "scope": "./",
