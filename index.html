@@ -28,6 +28,9 @@
   <script>
     var DATA_URL = "/api/propers";
     var CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSys6L2_-iAq7pmuS4puUKdWBpVAKk_-TycRZmxVOGHMpUyg0EyeLJzXhxUWevrtZoNETyyjzwPHk68/pub?gid=1700621661&single=true&output=csv";
+    // 긴 축일 이름 처리: "shrink" = 이름이 길면 날짜·이름을 함께 조금 작게
+    //                    "split"  = 세미콜론(;)마다 줄을 나누고 둘째 줄부터 작게
+    var TITLE_MODE = "shrink";
     var TIMEZONE = "Asia/Seoul";
     var NAV_SHOW_RANK = false;
 
@@ -74,8 +77,6 @@
     body {
       margin: 0;
       padding: 0;
-      background: linear-gradient(to right, rgba(80,60,40,0.025) 1px, transparent 1px);
-      background-size: 5px 5px;
       color: var(--ink);
       font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", "Malgun Gothic", sans-serif;
       line-height: 1.65;
@@ -184,26 +185,12 @@
       position: relative;
       background: rgba(255,253,248,0.88);
       border: 1px solid var(--line);
-      box-shadow: 0 2px 12px rgba(50,40,25,0.06);
+      box-shadow: 0 1px 3px rgba(50,40,25,0.05);
+      border-radius: 3px;
       padding: 42px 48px 55px;
       font-size: var(--base);
     }
 
-    .book::before {
-      content: "";
-      position: absolute;
-      left: 18px; top: 18px; bottom: 18px;
-      width: 1px;
-      background: rgba(110,46,50,0.12);
-    }
-
-    .book::after {
-      content: "";
-      position: absolute;
-      right: 18px; top: 18px; bottom: 18px;
-      width: 1px;
-      background: rgba(110,46,50,0.12);
-    }
 
     h1 {
       margin: 0 0 1.1em;
@@ -230,8 +217,7 @@
     h2:first-of-type { margin-top: 1.3em; }
 
     .item-name { color: var(--accent); }
-    .subtitle-normal { margin-left: 5px; color: var(--muted); font-size: 0.85em; font-weight: normal; }
-    .subtitle-small  { margin-left: 5px; color: var(--muted); font-size: 0.72em; font-weight: normal; }
+    .subtitle { margin-left: 6px; color: var(--muted); font-size: 0.78em; font-weight: normal; }
 
     hr.item-divider {
       height: 1px;
@@ -324,8 +310,6 @@
     @media (max-width: 600px) {
       .page { padding: 12px 10px 40px; }
       .book { padding: 28px 18px 40px; }
-      .book::before { left: 8px; top: 10px; bottom: 10px; }
-      .book::after { right: 8px; top: 10px; bottom: 10px; }
       p { text-align: left; }
       .navigation { gap: 8px; }
       .nav-card { padding: 8px 10px; }
@@ -518,6 +502,118 @@
       .saint-figure img { max-height: 300px; box-shadow: none; }
       .footer { margin-top: 20px; color: #555; opacity: 1; }
     }
+
+    /* ── 제목: 날짜 / 이름 두 줄 ── */
+    h1.feast-title {
+      margin: 0;
+      padding: 0;
+      border-bottom: 0;
+      font-size: 1.4em;
+      line-height: 1.45;
+      text-align: center;
+    }
+    h1 .h1-date { display: block; color: var(--accent); }
+    h1 .h1-name { display: block; color: var(--ink); }
+    h1 .tag { font-size: 0.5em; vertical-align: 0.3em; }
+
+    .title-rule {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0.9em 0 1.5em;
+      color: var(--accent-light);
+      font-size: 0.8em;
+    }
+    .title-rule::before, .title-rule::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--line);
+    }
+
+    .vestment { white-space: nowrap; }
+    .vest-white  { color: inherit; }
+    .vest-red    { color: #c0161f; }
+    .vest-violet { color: #6b2d8f; }
+    .vest-green  { color: #2e7d32; }
+
+    sup.vnum {
+      margin-right: 1px;
+      color: var(--muted);
+      font-size: 0.62em;
+      line-height: 0;
+      vertical-align: 0.55em;
+    }
+
+    /* ── 상단 한 줄 ── */
+    .toolbar { flex-wrap: nowrap; margin-bottom: 14px; }
+    .toolbar-group {
+      display: inline-flex;
+      gap: 0;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.45);
+    }
+    .toolbar-group .nav-button {
+      min-height: 36px;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+    }
+    .toolbar-group .nav-button + .nav-button { border-left: 1px solid var(--line); }
+    .toolbar-group .nav-button.home,
+    .toolbar-group .nav-button.active { background: var(--accent); color: #fff; font-weight: 600; }
+    .toolbar-group .nav-button.home:not(.active):not(.current) {}
+    .size-btn { min-height: 36px; min-width: 42px; }
+
+    @media (max-width: 600px) {
+      .toolbar-group { flex: 0 1 auto; }
+      .toolbar-group .nav-button { flex: 0 0 auto; padding: 6px 11px; font-size: 13px; }
+      .size-control { margin: 0; gap: 4px; }
+      .size-btn { min-width: 36px; padding: 0 7px; font-size: 14px; }
+      .size-btn.reset { padding: 0 8px; font-size: 12px; }
+      h1.feast-title { font-size: 1.3em; }
+    }
+
+    @media print {
+      h1 .h1-date, h1 .h1-name { color: #000; }
+    }
+
+    /* ── 긴 제목 ── */
+    h1.feast-title.is-long { font-size: 1.15em; }
+    h1 .h1-sub {
+      display: block;
+      margin-top: 0.35em;
+      color: var(--muted);
+      font-size: 0.68em;
+      font-weight: 500;
+      line-height: 1.5;
+    }
+    @media (max-width: 600px) {
+      h1.feast-title.is-long { font-size: 1.1em; }
+    }
+
+    /* ── 전례서 마무리 ── */
+    .end-mark {
+      margin: 2.6em 0 0;
+      color: var(--accent-light);
+      font-size: 0.95em;
+      text-align: center;
+      opacity: 0.8;
+    }
+    .footer { margin-top: 34px; font-size: 10.5px; letter-spacing: 0.05em; opacity: 0.85; }
+    .footer-mark { width: 52px; margin-bottom: 10px; opacity: 0.85; }
+
+    /* 목록: 오늘·다가오는 행 강조 */
+    .entry.is-today, .entry.is-upcoming {
+      margin: 2px 0;
+      border-bottom-color: transparent;
+      border-radius: 4px;
+      background: rgba(110,46,50,0.08);
+      box-shadow: inset 3px 0 0 var(--accent);
+    }
+    .entry.is-today .entry-title, .entry.is-upcoming .entry-title { font-weight: 600; }
   </style>
 
   <script>
@@ -588,7 +684,6 @@
 
     <div class="notice ui-font" id="notice" role="status" aria-live="polite"></div>
 
-    <nav class="navigation ui-font" id="nav-top"></nav>
 
     <article class="book" id="book">
       <div class="status ui-font">불러오는 중…</div>
@@ -599,7 +694,7 @@
     <div class="footer ui-font">
       <img class="footer-mark" alt=""
            src="img/ihs-emblem.png"
-           width="36" height="36" loading="lazy" decoding="async">
+           width="52" height="52" loading="lazy" decoding="async">
       <div>예수회 고유미사</div>
     </div>
   </main>
@@ -673,7 +768,8 @@
           title: String(r[1] || "").trim(),
           rank: String(r[2] || "").trim(),
           item: String(r[3] || "").trim(),
-          content: String(r[4] || "").trim()
+          content: String(r[4] || "").trim(),
+          color: String(r[5] || "").trim()
         });
       }
 
@@ -764,6 +860,42 @@
       return "";
     }
 
+    // 영대 색 표시: 시트 F열(색)의 백·홍·자·녹
+    var VESTMENT_CLASS = { "백": "vest-white", "홍": "vest-red", "자": "vest-violet", "녹": "vest-green" };
+
+    function vestmentBadge(color) {
+      var c = String(color || "").replace(/[\[\]\s]/g, "");
+      if (!VESTMENT_CLASS[c]) return "";
+      return '<span class="vestment ' + VESTMENT_CLASS[c] + '">[' + c + ']</span> ';
+    }
+
+    // 독서·복음 본문 속 절 번호를 작은 위첨자로
+    function markVerseNumbers(html) {
+      return html.replace(/(^|\s)(\d{1,3}[ㄱ-ㅎ]?)(?=\s)/g, '$1<sup class="vnum">$2</sup>');
+    }
+
+    // 제목 이름 부분. 이름이 길면 날짜·이름을 함께 조금 작게(is-long)
+    var LONG_TITLE_CHARS = 38;
+    function buildNameHtml(rawTitle, rank, color) {
+      var rankText = rank ? "(" + rank + ")" : "";
+      var parts = String(rawTitle || "").split(/\s*;\s*/).filter(function (x) { return x; });
+      if (TITLE_MODE === "split" && parts.length > 1) {
+        var subs = "";
+        for (var i = 1; i < parts.length; i++) {
+          subs += '<span class="h1-sub">' + escapeHtml(parts[i]) + "</span>";
+        }
+        return {
+          html: '<span class="h1-name">' + vestmentBadge(color) + escapeHtml(parts[0] + rankText) + "</span>" + subs,
+          long: (parts[0] + rankText).length > LONG_TITLE_CHARS
+        };
+      }
+      var full = String(rawTitle || "") + rankText;
+      return {
+        html: '<span class="h1-name">' + vestmentBadge(color) + escapeHtml(full) + "</span>",
+        long: full.length > LONG_TITLE_CHARS
+      };
+    }
+
     function buildDisplayTitle(mmdd, rawTitle, rank) {
       var title = formatMonthDay(mmdd) + ": " + rawTitle;
       if (rank) title += "(" + rank + ")";
@@ -831,6 +963,7 @@
       var buffer = [];
       var baseName = baseItemName(itemName);
       var isVerseSection = (baseName === "화답송" || baseName === "복음 환호송");
+      var isReading = (baseName === "제1독서" || baseName === "제2독서" || baseName === "복음");
       var isAntiphon = (itemName === "입당송" || itemName === "영성체송");
       var isFirstBlock = true;
       var nextBlockStyle = "";
@@ -839,7 +972,9 @@
         if (buffer.length === 0) return;
         var cls = (isFirstBlock && isAntiphon) ? ' class="antiphon-body"' : "";
         var stl = nextBlockStyle ? ' style="' + nextBlockStyle + '"' : "";
-        html += "<p" + cls + stl + ">" + buffer.map(escapeHtmlWithCross).join("<br>") + "</p>";
+        var body = buffer.map(escapeHtmlWithCross).join("<br>");
+        if (isReading) body = markVerseNumbers(body);
+        html += "<p" + cls + stl + ">" + body + "</p>";
         buffer = [];
         isFirstBlock = false;
         nextBlockStyle = "";
@@ -922,10 +1057,16 @@
 
       var rawTitle = firstNonEmpty(rows, "title");
       var rank = firstNonEmpty(rows, "rank");
+      var color = firstNonEmpty(rows, "color");
       var displayTitle = buildDisplayTitle(mmdd, rawTitle, rank);
-      var html = "<h1>" + escapeHtml(displayTitle) +
-        (mmdd === todayMMDD() ? ' <span class="tag ui-font">오늘</span>' : "") +
-        "</h1>";
+      var nameParts = buildNameHtml(rawTitle, rank, color);
+      var html = '<h1 class="feast-title' + (nameParts.long ? " is-long" : "") + '">' +
+        '<span class="h1-date">' + escapeHtml(formatMonthDay(mmdd)) +
+          (mmdd === todayMMDD() ? ' <span class="tag ui-font">오늘</span>' : "") +
+        "</span>" +
+        nameParts.html +
+        "</h1>" +
+        '<div class="title-rule" aria-hidden="true"><span>✠</span></div>';
 
       html += '<figure class="saint-figure" id="saint-figure" hidden></figure>';
 
@@ -950,13 +1091,14 @@
         var parsed = parseLiturgicalContent(r.item, r.content);
         var titleHtml = "<h2><span class='item-name'>" + escapeHtml(r.item) + "</span>";
         if (parsed.subtitle) {
-          var subClass = (r.item === "입당송" || r.item === "영성체송") ? "subtitle-small" : "subtitle-normal";
+          var subClass = "subtitle";
           titleHtml += " <span class='" + subClass + "'>" + escapeHtml(parsed.subtitle) + "</span>";
         }
         titleHtml += "</h2>";
         html += titleHtml + "<hr class='item-divider'>" + formatParagraphsForLiturgy(r.item, parsed.lines);
       });
 
+      html += '<div class="end-mark" aria-hidden="true">✠</div>';
       return { title: displayTitle, body: html };
     }
 
@@ -1051,7 +1193,7 @@
           ? '<span class="entry-more ui-font">외 ' + (parts.length - 1) + "</span>"
           : "";
 
-        html += '<a class="entry' + (date === today ? " is-today" : "") +
+        html += '<a class="entry' + (date === today ? " is-today" : "") + (date === upcoming ? " is-upcoming" : "") +
           '" data-date="' + date + '" href="?date=' + date + '" title="' + escapeHtml(info.title) + '">' +
           '<span class="entry-date ui-font">' + escapeHtml(formatMonthDay(date)) + "</span>" +
           '<span class="entry-title">' + escapeHtml(shortTitle) + more + tag + "</span>" +
@@ -1071,7 +1213,12 @@
     function setToolbar(view) {
       var home = document.querySelector(".nav-button[data-home]");
       var list = document.querySelector('.nav-button[data-view="list"]');
-      if (home) home.classList.toggle("home", view !== "list");
+      if (home) {
+        home.classList.toggle("home", view !== "list");
+        // 오늘이 고유미사 날이면 버튼 이름을 '오늘의 고유미사'로
+        var isTodayProper = !!(DATA && DATA.info && DATA.info[todayMMDD()]);
+        home.textContent = isTodayProper ? "오늘의 고유미사" : "다가오는 고유미사";
+      }
       if (list) list.classList.toggle("active", view === "list");
     }
 
@@ -1110,7 +1257,6 @@
         }
       }
 
-      document.getElementById("nav-top").innerHTML = navHtml;
       document.getElementById("nav-bottom").innerHTML = navHtml;
       document.title = title;
       setToolbar(state.view);
@@ -1157,7 +1303,6 @@
 
     function showStatus(html) {
       document.getElementById("book").innerHTML = '<div class="status ui-font">' + html + "</div>";
-      document.getElementById("nav-top").innerHTML = "";
       document.getElementById("nav-bottom").innerHTML = "";
     }
 
