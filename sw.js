@@ -1,6 +1,6 @@
 // 서비스 워커: 본문(HTML)은 항상 최신을 먼저 받아오고(네트워크 우선),
 // 오프라인일 때만 저장해 둔 화면을 보여준다. 이미지 등은 캐시 우선으로 속도만 챙긴다.
-const CACHE_NAME = "jesuitproperkr-v2"; // 버전 올림: 예전 캐시를 정리하기 위함
+const CACHE_NAME = "jesuitproperkr-v4"; // 버전 올림: 예전 캐시를 정리하기 위함
 const CORE_ASSETS = ["./", "./index.html"];
 
 self.addEventListener("install", (event) => {
@@ -26,6 +26,9 @@ self.addEventListener("fetch", (event) => {
 
   // 구글 시트 CSV는 항상 최신 데이터를 받아야 하므로 서비스 워커가 손대지 않는다
   if (req.url.includes("docs.google.com")) return;
+
+  // 성인 이미지는 서비스 워커가 붙잡지 않는다: 같은 이름으로 그림을 바꿔 올려도 바로 반영되도록
+  if (req.url.includes("/img/saints/")) return;
 
   var isPage =
     req.mode === "navigate" ||
