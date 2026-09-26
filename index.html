@@ -649,6 +649,46 @@
       font-size: 13px;
     }
     .mini-link:hover { background: var(--white); }
+
+    /* 그림 크게 보기 */
+    .saint-figure img.zoomable { cursor: zoom-in; }
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: calc(env(safe-area-inset-top, 0px) + 12px) 12px calc(env(safe-area-inset-bottom, 0px) + 12px);
+      background: rgba(22,18,14,0.94);
+      cursor: zoom-out;
+    }
+    .lightbox[hidden] { display: none; }
+    .lightbox img {
+      display: block;
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+    }
+    .lightbox-close {
+      position: absolute;
+      top: calc(env(safe-area-inset-top, 0px) + 10px);
+      right: 12px;
+      width: 40px;
+      height: 40px;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      font-size: 18px;
+      line-height: 40px;
+      cursor: pointer;
+    }
+    html.lightbox-open, html.lightbox-open body { overflow: hidden; }
+    @media print { .lightbox { display: none !important; } }
   </style>
 
   <script>
@@ -735,6 +775,11 @@
       <div>예수회 고유미사</div>
     </div>
   </main>
+
+  <div class="lightbox" id="lightbox" hidden role="dialog" aria-label="그림 크게 보기">
+    <button type="button" class="lightbox-close" aria-label="닫기">✕</button>
+    <img id="lightbox-img" alt="">
+  </div>
 
   <script>
   (function () {
@@ -1155,6 +1200,9 @@
           var fig = document.getElementById("saint-figure");
           if (!fig || !currentState || currentState.date !== mmdd) return; // 그사이 다른 날짜로 넘어감
           fig.innerHTML = "";
+          img.className = "zoomable";
+          img.title = "눌러서 크게 보기";
+          img.addEventListener("click", function () { openLightbox(img.src, img.alt); });
           fig.appendChild(img);
           if (captions[mmdd]) {
             var fc = document.createElement("figcaption");
@@ -1169,6 +1217,29 @@
       }
       attempt(0);
     }
+
+    // 그림 크게 보기: 누르면 화면 가득 그림만, 아무 데나 누르거나 Esc로 닫기
+    function openLightbox(src, alt) {
+      var box = document.getElementById("lightbox");
+      var big = document.getElementById("lightbox-img");
+      if (!box || !big) return;
+      big.src = src;
+      big.alt = alt || "";
+      box.hidden = false;
+      document.documentElement.classList.add("lightbox-open");
+    }
+    function closeLightbox() {
+      var box = document.getElementById("lightbox");
+      if (!box || box.hidden) return;
+      box.hidden = true;
+      document.documentElement.classList.remove("lightbox-open");
+    }
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeLightbox();
+    });
+    document.addEventListener("click", function (e) {
+      if (e.target && e.target.closest && e.target.closest("#lightbox")) closeLightbox();
+    });
 
     var ORNAMENT_SRC = "img/frontispiece.png";
 
