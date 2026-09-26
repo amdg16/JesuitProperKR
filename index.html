@@ -614,6 +614,41 @@
       box-shadow: inset 3px 0 0 var(--accent);
     }
     .entry.is-today .entry-title, .entry.is-upcoming .entry-title { font-weight: 600; }
+
+    /* 위쪽 작은 이전/다음 */
+    .mini-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: -4px 2px 8px;
+      font-size: 13px;
+    }
+    .mini-nav:empty { display: none; }
+    .mini-link {
+      padding: 4px 2px;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .mini-link:hover { text-decoration: none; }
+    .mini-link.disabled { visibility: hidden; }
+    @media print { .mini-nav { display: none !important; } }
+
+    /* 위쪽 이전/다음: 글자 크기 버튼과 같은 테두리 버튼 */
+    .mini-nav { margin: 0 0 10px; }
+    .mini-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 34px;
+      padding: 0 13px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: rgba(255,255,255,0.45);
+      font-size: 13px;
+    }
+    .mini-link:hover { background: var(--white); }
   </style>
 
   <script>
@@ -684,6 +719,8 @@
 
     <div class="notice ui-font" id="notice" role="status" aria-live="polite"></div>
 
+
+    <nav class="mini-nav ui-font" id="nav-mini"></nav>
 
     <article class="book" id="book">
       <div class="status ui-font">불러오는 중…</div>
@@ -1149,6 +1186,18 @@
              "</a>";
     }
 
+    // 위쪽 작은 이전/다음: 날짜만
+    function miniNavHtml(prev, next) {
+      function link(info, dir) {
+        var label = info ? info.label : "";
+        var text = (dir === "prev") ? "← " + label : label + " →";
+        if (!info) return '<span class="mini-link ' + dir + ' disabled"></span>';
+        return '<a class="mini-link ' + dir + '" data-date="' + info.date + '" href="?date=' + info.date + '"' +
+               ' title="' + escapeHtml(info.name || "") + '">' + escapeHtml(text) + "</a>";
+      }
+      return link(prev, "prev") + link(next, "next");
+    }
+
     function emptyStateHtml(date, prev, next) {
       var html = '<div class="empty-state ui-font"><div class="empty-symbol">✠</div>' +
         '<div class="empty-date">' + escapeHtml(formatMonthDay(date)) + "</div>" +
@@ -1233,6 +1282,7 @@
       currentState = state;
 
       var navHtml = "";
+      var miniHtml = "";
       var title = "예수회 고유미사";
 
       if (state.view === "list") {
@@ -1250,6 +1300,7 @@
         document.getElementById("book").innerHTML =
           proprium ? proprium.body : emptyStateHtml(state.date, prev, next);
         navHtml = navCardHtml(prev, "prev") + navCardHtml(next, "next");
+        miniHtml = miniNavHtml(prev, next);
         if (proprium) {
           title = proprium.title;
           var saintName = String((DATA.info[state.date] || {}).title || "").split(/\s*;\s*/)[0];
@@ -1258,6 +1309,7 @@
       }
 
       document.getElementById("nav-bottom").innerHTML = navHtml;
+      document.getElementById("nav-mini").innerHTML = miniHtml;
       document.title = title;
       setToolbar(state.view);
 
@@ -1304,6 +1356,7 @@
     function showStatus(html) {
       document.getElementById("book").innerHTML = '<div class="status ui-font">' + html + "</div>";
       document.getElementById("nav-bottom").innerHTML = "";
+      document.getElementById("nav-mini").innerHTML = "";
     }
 
     function showError(msg) {
