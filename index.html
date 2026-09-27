@@ -532,7 +532,7 @@
     }
 
     .vestment { white-space: nowrap; }
-    .vest-white  { color: inherit; }
+    .vest-white  { color: #aaa396; }   /* 백: 옅은 회색 */
     .vest-red    { color: #c0161f; }
     .vest-violet { color: #6b2d8f; }
     .vest-green  { color: #2e7d32; }
@@ -749,6 +749,9 @@
       letter-spacing: 0.06em;
     }
     @media print { h1 .rank-line { background: none; color: #000; } }
+
+    /* 아래쪽 이전/다음 카드 날짜도 먹색 */
+    .nav-date { color: var(--ink); }
   </style>
 
   <script>
