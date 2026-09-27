@@ -735,6 +735,20 @@
 
     /* 날짜도 이름과 같은 먹색 */
     h1 .h1-date { color: var(--ink); }
+
+    /* 등급: 옅은 와인색 알약 */
+    h1 .rank-line {
+      display: table;
+      margin: 0.55em auto 0;
+      padding: 0.25em 0.85em;
+      border-radius: 999px;
+      background: rgba(110,46,50,0.09);
+      color: var(--accent);
+      font-size: 0.64em;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+    }
+    @media print { h1 .rank-line { background: none; color: #000; } }
   </style>
 
   <script>
@@ -1377,7 +1391,7 @@
           '" data-date="' + date + '" href="?date=' + date + '" title="' + escapeHtml(info.title) + '">' +
           '<span class="entry-date ui-font">' + escapeHtml(formatMonthDay(date)) + "</span>" +
           '<span class="entry-title">' + escapeHtml(shortTitle) + more + tag + "</span>" +
-          (info.rank ? '<span class="entry-rank ui-font">' + escapeHtml(info.rank) + "</span>" : "") +
+          (info.rank ? '<span class="entry-rank ui-font">' + escapeHtml(String(info.rank).replace(/\[/g, "(").replace(/\]/g, ")")) + "</span>" : "") +
           "</a>";
       }
       if (openMonth) html += "</div>";
