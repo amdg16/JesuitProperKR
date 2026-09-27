@@ -694,6 +694,47 @@
     h2 { margin-bottom: 0.5em; }
     hr.item-divider { margin-bottom: 0.6em; }
     p.antiphon-body { margin-top: 0; }
+
+    /* 등급: 이름 아래 작은 줄 */
+    h1 .rank-line {
+      display: block;
+      margin-top: 0.35em;
+      color: var(--muted);
+      font-size: 0.58em;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+    }
+
+    /* 날짜 양옆 ‹ › */
+    h1 .h1-date {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+    }
+    .date-arrow {
+      display: inline-flex;
+      flex: 0 0 auto;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      padding-bottom: 3px;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      color: var(--accent);
+      font-size: 20px;
+      font-weight: 400;
+      line-height: 1;
+      text-decoration: none;
+      box-sizing: border-box;
+    }
+    .date-arrow:hover { background: var(--white); border-color: var(--accent-light); }
+    .date-arrow.disabled { visibility: hidden; }
+    @media print { .date-arrow { display: none !important; } }
+
+    /* 날짜도 이름과 같은 먹색 */
+    h1 .h1-date { color: var(--ink); }
   </style>
 
   <script>
@@ -748,8 +789,6 @@
 
 <body>
   <main class="page">
-
-    <nav class="mini-nav ui-font" id="nav-mini"></nav>
 
     <div class="toolbar ui-font">
       <div class="toolbar-group">
@@ -1146,12 +1185,14 @@
       var rank = firstNonEmpty(rows, "rank");
       var color = firstNonEmpty(rows, "color");
       var displayTitle = buildDisplayTitle(mmdd, rawTitle, rank);
-      var nameParts = buildNameHtml(rawTitle, rank, color);
+      var rankLabel = escapeHtml(String(rank || "").replace(/\[/g, "(").replace(/\]/g, ")"));
+      var nameParts = buildNameHtml(rawTitle, "", color);
       var html = '<h1 class="feast-title' + (nameParts.long ? " is-long" : "") + '">' +
         '<span class="h1-date">' + escapeHtml(formatMonthDay(mmdd)) +
           (mmdd === todayMMDD() ? ' <span class="tag ui-font">오늘</span>' : "") +
         "</span>" +
         nameParts.html +
+        (rank ? '<span class="rank-line ui-font">' + rankLabel + "</span>" : "") +
         "</h1>" +
         '<div class="title-rule" aria-hidden="true"><span>✠</span></div>';
 
@@ -1260,6 +1301,20 @@
              '<span class="nav-date">' + escapeHtml(info.label) + '</span>' +
              (info.name ? '<span class="nav-name">(' + escapeHtml(info.name) + ')</span>' : "") +
              "</a>";
+    }
+
+    // 제목 날짜 양옆의 ‹ › 버튼 (이전/다음 고유미사)
+    function addDateArrows(prev, next) {
+      var d = document.querySelector("#book .h1-date");
+      if (!d) return;
+      function arrow(info, dir) {
+        if (!info) return '<span class="date-arrow ' + dir + ' disabled" aria-hidden="true"></span>';
+        var word = (dir === "prev") ? "이전" : "다음";
+        return '<a class="date-arrow ' + dir + '" data-date="' + info.date + '" href="?date=' + info.date + '"' +
+               ' title="' + word + ": " + escapeHtml(info.label + " " + (info.name || "")) + '"' +
+               ' aria-label="' + word + ": " + escapeHtml(info.label) + '">' + (dir === "prev" ? "‹" : "›") + "</a>";
+      }
+      d.innerHTML = arrow(prev, "prev") + '<span class="h1-date-text">' + d.innerHTML + "</span>" + arrow(next, "next");
     }
 
     // 위쪽 작은 이전/다음: 날짜만
@@ -1376,16 +1431,15 @@
         document.getElementById("book").innerHTML =
           proprium ? proprium.body : emptyStateHtml(state.date, prev, next);
         navHtml = navCardHtml(prev, "prev") + navCardHtml(next, "next");
-        miniHtml = miniNavHtml(prev, next);
         if (proprium) {
           title = proprium.title;
+          addDateArrows(prev, next);
           var saintName = String((DATA.info[state.date] || {}).title || "").split(/\s*;\s*/)[0];
           showSaintImage(state.date, saintName);
         }
       }
 
       document.getElementById("nav-bottom").innerHTML = navHtml;
-      document.getElementById("nav-mini").innerHTML = miniHtml;
       document.title = title;
       setToolbar(state.view);
 
@@ -1394,7 +1448,19 @@
           window.history.pushState(state, "", stateToUrl(state, opts.home));
         } catch (e) {}
       }
-      if (opts.scroll) window.scrollTo(0, 0);
+      if (opts.scroll) {
+        if (state.view === "list") scrollToUpcomingMonth();
+        else window.scrollTo(0, 0);
+      }
+    }
+
+    // 전체 목록을 열면 오늘/다가오는 고유미사가 있는 달부터 보이게 (위로 올리면 앞 달도 그대로 있음)
+    function scrollToUpcomingMonth() {
+      var entry = document.querySelector("#book .entry.is-today, #book .entry.is-upcoming");
+      var month = entry && entry.closest ? entry.closest(".month") : null;
+      if (!month) { window.scrollTo(0, 0); return; }
+      var y = month.getBoundingClientRect().top + (window.pageYOffset || 0) - 12;
+      window.scrollTo(0, Math.max(0, y));
     }
 
     function defaultState() {
@@ -1432,7 +1498,6 @@
     function showStatus(html) {
       document.getElementById("book").innerHTML = '<div class="status ui-font">' + html + "</div>";
       document.getElementById("nav-bottom").innerHTML = "";
-      document.getElementById("nav-mini").innerHTML = "";
     }
 
     function showError(msg) {
@@ -1469,7 +1534,8 @@
       var data = buildData(csvText);
       if (data.rows.length === 0) throw new Error("empty");
       DATA = data;
-      render(isRefresh && currentState ? currentState : initialState(), {});
+      var st = (isRefresh && currentState) ? currentState : initialState();
+      render(st, (!isRefresh && st.view === "list") ? { scroll: true } : {});
     }
 
     function load() {
