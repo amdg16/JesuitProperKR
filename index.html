@@ -920,9 +920,10 @@
       for (var j = 0; j < rows.length; j++) {
         var x = rows[j];
         set[x.date] = true;
-        if (!info[x.date]) info[x.date] = { title: "", rank: "" };
+        if (!info[x.date]) info[x.date] = { title: "", rank: "", color: "" };
         if (!info[x.date].title && x.title) info[x.date].title = x.title;
         if (!info[x.date].rank && x.rank) info[x.date].rank = x.rank;
+        if (!info[x.date].color && x.color) info[x.date].color = x.color;
       }
 
       return { rows: rows, dates: Object.keys(set).sort(), info: info };
@@ -1394,7 +1395,7 @@
         html += '<a class="entry' + (date === today ? " is-today" : "") + (date === upcoming ? " is-upcoming" : "") +
           '" data-date="' + date + '" href="?date=' + date + '" title="' + escapeHtml(info.title) + '">' +
           '<span class="entry-date ui-font">' + escapeHtml(formatMonthDay(date)) + "</span>" +
-          '<span class="entry-title">' + escapeHtml(shortTitle) + more + tag + "</span>" +
+          '<span class="entry-title">' + vestmentBadge(info.color) + escapeHtml(shortTitle) + more + tag + "</span>" +
           (info.rank ? '<span class="entry-rank ui-font">' + escapeHtml(String(info.rank).replace(/\[/g, "(").replace(/\]/g, ")")) + "</span>" : "") +
           "</a>";
       }
