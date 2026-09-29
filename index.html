@@ -1607,9 +1607,9 @@
               ? '<a class="common-link" data-common="' + m + '" href="?common=' + encodeURIComponent(m) + '">' + m + "</a>"
               : escapeHtml(m);
           }).join(" 또는 ");
-          var tag = season || (easterOnly ? "부활 시기" : "");
-          p.innerHTML = "예수회 공통 " + kindWord + ": " + links +
-            (tag ? ' <span class="season-tag">(' + escapeHtml(tag) + ")</span>" : "");
+          p.innerHTML = "예수회 공통 " + kindWord + ": " + links;
+          p.setAttribute("data-ref-kind", kindWord);
+          p.setAttribute("data-names", names.join("|"));
           p.className = "common-ref";
           p.removeAttribute("style");
           fitOneLine(p);
@@ -1680,6 +1680,20 @@
             p.insertAdjacentHTML("afterend", '<div class="expand-panel" hidden></div>');
           }
         }
+      }
+
+      // 공통 독서 안내가 두 번(부활 시기 / 아닌 때) 나오면 첫 번째 하나로 합치기
+      var readRefs = book.querySelectorAll('p.common-ref[data-ref-kind="독서"]');
+      if (readRefs.length > 1) {
+        var all = [];
+        var lists = [].map.call(readRefs, function (el) { return (el.getAttribute("data-names") || "").split("|"); });
+        lists.sort(function (a, b) { return b.length - a.length; });
+        lists.forEach(function (lst) { lst.forEach(function (n) { if (n && all.indexOf(n) < 0) all.push(n); }); });
+        readRefs[0].innerHTML = "예수회 공통 독서: " + all.map(function (m) {
+          return '<a class="common-link" data-common="' + m + '" href="?common=' + encodeURIComponent(m) + '">' + m + "</a>";
+        }).join(" 또는 ");
+        for (var rr = 1; rr < readRefs.length; rr++) readRefs[rr].parentNode.removeChild(readRefs[rr]);
+        fitOneLine(readRefs[0]);
       }
 
       // 긴 설명 접기: 첫 문단이 짧은 요약이면 나머지는 '자세히 보기'로
