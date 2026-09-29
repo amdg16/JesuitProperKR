@@ -822,6 +822,22 @@
       text-underline-offset: 3px;
     }
     .extra-list .entry-date { color: var(--muted); }
+
+    /* 공통 기도문·독서 안내: 참고용 */
+    p.common-ref, p.common-ref-long {
+      margin: 0.9em 0 1.3em !important;
+      padding-top: 0.45em;
+      border-top: 1px dotted var(--line);
+      color: var(--muted);
+      font-weight: 400;
+      line-height: 1.55;
+    }
+    p.common-ref { font-size: 0.63em; letter-spacing: -0.02em; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    p.common-ref-long { font-size: 0.7em; text-align: left; }
+    p.common-ref::before, p.common-ref-long::before { content: "참고 · "; }
+    p.common-ref a.common-link, p.common-ref-long a.common-link { color: var(--rubric); text-decoration: none; white-space: nowrap; }
+    p.common-ref a.common-link::after, p.common-ref-long a.common-link::after { content: " →"; }
+    a.common-link:hover { text-decoration: underline; text-underline-offset: 2px; }
   </style>
 
   <script>
@@ -1534,15 +1550,21 @@
           continue;
         }
 
-        // "예수회 공통 기도문/독서: 순교자 공통 …" → 공통 페이지로 가는 링크
+        // "예수회 공통 기도문/독서: 순교자 공통 …" → 공통 페이지로 가는 링크 (참고용으로 작게)
         if (/예수회 공통 (기도문|독서)/.test(text) && DATA.extra && DATA.extra.commons) {
           var h = p.innerHTML;
-          h = h.replace(/(순교자|목자|선교사|수도자) 공통/g, function (m) {
+          var at = h.search(/예수회 공통 (기도문|독서)/);
+          var head = h.slice(0, at), tail = h.slice(at);
+          // '예수회 공통 …' 뒤에 오는 이름만 링크로 (로마 미사 경본의 '목자 공통' 등은 그대로)
+          tail = tail.replace(/(순교자|목자|선교사|수도자) 공통/g, function (m) {
             return DATA.extra.commons[m]
               ? '<a class="common-link" data-common="' + m + '" href="?common=' + encodeURIComponent(m) + '">' + m + "</a>"
               : m;
           });
+          h = (head + tail).replace(/(<\/a>)\.\s*$/, "$1");
           p.innerHTML = h;
+          var pure = /^예수회 공통 (기도문|독서):[^,，]*$/.test(text.replace(/\.\s*$/, ""));
+          p.classList.add(pure ? "common-ref" : "common-ref-long");
           continue;
         }
 
