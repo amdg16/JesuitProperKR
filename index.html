@@ -752,6 +752,76 @@
 
     /* 아래쪽 이전/다음 카드 날짜도 먹색 */
     .nav-date { color: var(--ink); }
+
+    /* 펼치기: 감사송 · 장엄 강복 · 긴 설명 */
+    .expand-link {
+      display: inline;
+      padding: 0 0 1px;
+      border: 0;
+      border-bottom: 1px dashed currentColor;
+      background: none;
+      color: var(--rubric);
+      font: inherit;
+      cursor: pointer;
+    }
+    .expand-link:hover { color: var(--accent); }
+    .expand-caret { display: inline-block; margin-left: 3px; font-size: 0.8em; transition: transform 0.15s; }
+    .expand-link[aria-expanded="true"] .expand-caret { transform: rotate(180deg); }
+    .expand-panel {
+      margin: 0.7em 0 1.4em;
+      padding: 0.9em 1.1em 0.3em;
+      border-left: 3px solid rgba(110,46,50,0.25);
+      border-radius: 0 4px 4px 0;
+      background: rgba(110,46,50,0.035);
+    }
+    .expand-panel p { margin: 0 0 0.8em; }
+    .expand-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 0.8em; }
+    .expand-tab {
+      padding: 3px 11px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: rgba(255,255,255,0.6);
+      color: var(--muted);
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .expand-tab.active { border-color: var(--accent-light); color: var(--accent); font-weight: 600; }
+    .expand-meta { margin-bottom: 0.7em; color: var(--muted); font-size: 0.82em; }
+    .expand-source { margin-left: 8px; font-size: 0.95em; }
+    .desc-more-line { margin: -0.3em 0 1em; font-size: 0.9em; }
+    .expand-panel.desc-detail { padding-top: 0.8em; }
+    @media print {
+      .expand-link { border: 0; color: inherit; }
+      .expand-caret, .desc-more-line { display: none; }
+      .expand-panel.desc-detail { display: block !important; border: 0; background: none; padding: 0; }
+    }
+
+    /* 공통 · 신심 미사 페이지 */
+    h1 .h1-label { font-size: 0.62em; letter-spacing: 0.12em; color: var(--muted); }
+    h2.part-heading {
+      margin: 2.4em 0 0.2em;
+      color: var(--accent);
+      font-size: 0.95em;
+      letter-spacing: 0.14em;
+      text-align: center;
+    }
+    h2.part-heading::before, h2.part-heading::after { content: "— "; color: var(--accent-light); }
+    h2.part-heading::after { content: " —"; }
+    h3.set-heading {
+      margin: 2em 0 -0.6em;
+      color: var(--muted);
+      font-size: 0.82em;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+    }
+    .notes-line { margin: 0 0 1em; font-size: 0.9em; text-align: center; }
+    a.common-link {
+      color: inherit;
+      text-decoration: underline;
+      text-decoration-style: dashed;
+      text-underline-offset: 3px;
+    }
+    .extra-list .entry-date { color: var(--muted); }
   </style>
 
   <script>
@@ -902,8 +972,39 @@
       table.shift();
 
       var rows = [];
+      var extra = { prefaces: {}, blessings: [], commons: {}, commonOrder: [], votives: {}, votiveOrder: [] };
       for (var i = 0; i < table.length; i++) {
         var r = table[i];
+        var kind = String(r[0] || "").trim();
+        // 날짜 칸이 '감사송' / '장엄강복'인 행: 날짜별 미사가 아닌 공통 본문
+        if (kind === "감사송") {
+          extra.prefaces[String(r[3] || "").trim()] = {
+            name: String(r[3] || "").trim(), sub: String(r[1] || "").trim(),
+            source: String(r[2] || "").trim(), content: String(r[4] || "").trim()
+          };
+          continue;
+        }
+        if (kind === "장엄강복") {
+          var bd = String(r[2] || "").trim();
+          if (/^\d{3}$/.test(bd)) bd = "0" + bd;
+          extra.blessings.push({
+            title: String(r[1] || "").trim(), date: bd,
+            name: String(r[3] || "").trim(), content: String(r[4] || "").trim()
+          });
+          continue;
+        }
+        // 날짜 칸이 '공통' / '신심미사'인 행: 예수회 공통 기도문·독서, 신심 미사
+        if (kind === "공통" || kind === "신심미사") {
+          var bname = String(r[1] || "").trim();
+          var store = (kind === "공통") ? extra.commons : extra.votives;
+          var order = (kind === "공통") ? extra.commonOrder : extra.votiveOrder;
+          if (!store[bname]) {
+            store[bname] = { name: bname, no: String(r[2] || "").trim(), color: String(r[5] || "").trim(), rows: [] };
+            order.push(bname);
+          }
+          store[bname].rows.push({ item: String(r[3] || "").trim(), content: String(r[4] || "").trim() });
+          continue;
+        }
         var date = normalizeDate(r[0]);
         if (!date) continue;
         rows.push({
@@ -926,7 +1027,7 @@
         if (!info[x.date].color && x.color) info[x.date].color = x.color;
       }
 
-      return { rows: rows, dates: Object.keys(set).sort(), info: info };
+      return { rows: rows, dates: Object.keys(set).sort(), info: info, extra: extra };
     }
 
     function todayMMDD() {
@@ -1225,12 +1326,28 @@
         html += formatParagraphsForLiturgy("설명", splitLines(descRow.content));
       }
 
+      html += renderItemRows(rows);
+
+      html += '<div class="end-mark" aria-hidden="true">✠</div>';
+      return { title: displayTitle, body: html };
+    }
+
+    // 입당송·본기도·독서 등 항목들을 차례로 그리기 (고유미사·공통·신심 미사 공용)
+    function renderItemRows(rows) {
+      var html = "";
       rows.filter(function (r) {
         if (r.item === "설명") return false;
         if (r.content) return true;
         var base = baseItemName(r.item);
         return (base === "대영광송" || base === "신경");
       }).forEach(function (r) {
+        if (r.item === "큰구분") { html += '<h2 class="part-heading ui-font">' + escapeHtml(r.content) + "</h2>"; return; }
+        if (r.item === "구분") { html += '<h3 class="set-heading ui-font">' + escapeHtml(r.content) + "</h3>"; return; }
+        if (r.item === "안내") { html += '<p class="rubric">' + escapeHtml(r.content) + "</p>"; return; }
+        if (r.item === "일러두기") {
+          html += '<p class="notes-line ui-font" data-notes="' + escapeHtml(r.content) + '">일러두기</p>';
+          return;
+        }
         if (!r.content) {
           html += "<p class='rubric'>" + escapeHtml(r.item) + "</p>";
           return;
@@ -1244,10 +1361,32 @@
         titleHtml += "</h2>";
         html += titleHtml + "<hr class='item-divider'>" + formatParagraphsForLiturgy(r.item, parsed.lines);
       });
-
-      html += '<div class="end-mark" aria-hidden="true">✠</div>';
-      return { title: displayTitle, body: html };
+      return html;
     }
+
+    // 예수회 공통(순교자·목자·선교사·수도자) / 신심 미사 페이지
+    function getSpecialPage(state) {
+      var ex = DATA.extra || {};
+      var block = null, label = "";
+      if (state.view === "common") { block = (ex.commons || {})[state.key]; label = "예수회 공통"; }
+      else {
+        label = "예수회 신심 미사";
+        var vs = ex.votives || {};
+        block = vs[state.key] || null;
+        if (!block) for (var k in vs) if (vs[k].no === String(state.key)) { block = vs[k]; break; }
+      }
+      if (!block) return null;
+      var html = '<h1 class="feast-title">' +
+        '<span class="h1-date h1-label">' + escapeHtml(label) + "</span>" +
+        '<span class="h1-name">' + vestmentBadge(block.color) + escapeHtml(block.name) + "</span>" +
+        "</h1>" +
+        '<div class="title-rule" aria-hidden="true"><span>✠</span></div>';
+      html += renderItemRows(block.rows);
+      html += '<div class="end-mark" aria-hidden="true">✠</div>';
+      return { title: block.name + " — 예수회 고유미사", body: html };
+    }
+
+    function specialKeyFromName(view, name) { return name; }
 
     // ── 성인 이미지 불러오기 ──────────────────────────────────────────
     // img/saints/MMDD.jpg → .png → .webp 순서로 시도, 모두 없으면 조용히 넘어간다
@@ -1321,6 +1460,187 @@
              (info.name ? '<span class="nav-name">(' + escapeHtml(info.name) + ')</span>' : "") +
              "</a>";
     }
+
+
+    // ─────────────────────────────────────────────
+    // 본문 보강: 감사송·장엄 강복 펼치기, 긴 설명 접기
+    // ─────────────────────────────────────────────
+    function formatPlainText(text) {
+      return String(text || "").split(/\n\s*\n/).map(function (para) {
+        var lines = para.split("\n").map(function (l) { return l.trim(); }).filter(function (l) { return l; });
+        if (!lines.length) return "";
+        return "<p>" + lines.map(escapeHtmlWithCross).join("<br>") + "</p>";
+      }).join("");
+    }
+
+    // "순교자 감사송" → [순교자 감사송 1, 순교자 감사송 2]
+    function prefaceVariants(groupName) {
+      var pre = (DATA && DATA.extra && DATA.extra.prefaces) || {};
+      var out = [];
+      if (pre[groupName]) out.push(pre[groupName]);
+      for (var n = 1; n <= 5; n++) {
+        if (pre[groupName + " " + n]) out.push(pre[groupName + " " + n]);
+      }
+      return out;
+    }
+
+    function expandPanelHtml(items) {
+      // items: [{tab, sub, source, content}]
+      var html = "";
+      if (items.length > 1) {
+        html += '<div class="expand-tabs ui-font" role="tablist">';
+        for (var i = 0; i < items.length; i++) {
+          html += '<button type="button" class="expand-tab' + (i === 0 ? " active" : "") + '" data-tab="' + i + '">' +
+                  escapeHtml(items[i].tab) + "</button>";
+        }
+        html += "</div>";
+      }
+      for (var j = 0; j < items.length; j++) {
+        var it = items[j];
+        html += '<div class="expand-body" data-tab="' + j + '"' + (j === 0 ? "" : " hidden") + ">";
+        if (it.sub || it.source) {
+          html += '<div class="expand-meta ui-font">' +
+            (it.sub ? escapeHtml(it.sub) : "") +
+            (it.source ? '<span class="expand-source">『' + escapeHtml(it.source) + "』</span>" : "") +
+            "</div>";
+        }
+        html += formatPlainText(it.content) + "</div>";
+      }
+      return html;
+    }
+
+    function makeToggle(label, key) {
+      return '<button type="button" class="expand-link" data-key="' + escapeHtml(key) + '" aria-expanded="false">' +
+             escapeHtml(label) + '<span class="expand-caret" aria-hidden="true">▾</span></button>';
+    }
+
+    var EXPAND_ITEMS = {};
+
+    function enhanceProprium(mmdd) {
+      var book = document.getElementById("book");
+      if (!book || !DATA) return;
+      EXPAND_ITEMS = {};
+      var ps = book.querySelectorAll("p");
+
+      for (var i = 0; i < ps.length; i++) {
+        var p = ps[i];
+        var text = (p.textContent || "").trim();
+
+        // 일러두기: 눌러서 펼치기
+        if (p.classList.contains("notes-line")) {
+          EXPAND_ITEMS["notes"] = [{ tab: "일러두기", content: p.getAttribute("data-notes") || "" }];
+          p.innerHTML = makeToggle("일러두기", "notes");
+          p.insertAdjacentHTML("afterend", '<div class="expand-panel" hidden></div>');
+          continue;
+        }
+
+        // "예수회 공통 기도문/독서: 순교자 공통 …" → 공통 페이지로 가는 링크
+        if (/예수회 공통 (기도문|독서)/.test(text) && DATA.extra && DATA.extra.commons) {
+          var h = p.innerHTML;
+          h = h.replace(/(순교자|목자|선교사|수도자) 공통/g, function (m) {
+            return DATA.extra.commons[m]
+              ? '<a class="common-link" data-common="' + m + '" href="?common=' + encodeURIComponent(m) + '">' + m + "</a>"
+              : m;
+          });
+          p.innerHTML = h;
+          continue;
+        }
+
+        // 감사송 안내: "순교자 감사송" / "목자 감사송 또는 수도자 감사송"
+        if (/감사송$/.test(text) && text.length < 40 && !p.querySelector("button")) {
+          var names = text.split(/\s*또는\s*/);
+          var parts = [], ok = false;
+          for (var k = 0; k < names.length; k++) {
+            var vs = prefaceVariants(names[k]);
+            if (vs.length) {
+              ok = true;
+              EXPAND_ITEMS["pref:" + names[k]] = vs.map(function (v) {
+                return { tab: v.name, sub: v.sub, source: v.source, content: v.content };
+              });
+              parts.push(makeToggle(names[k], "pref:" + names[k]));
+            } else {
+              parts.push(escapeHtml(names[k]));
+            }
+          }
+          if (ok) {
+            p.innerHTML = parts.join(" 또는 ");
+            p.classList.add("expand-line");
+            p.insertAdjacentHTML("afterend", '<div class="expand-panel" hidden></div>');
+          }
+          continue;
+        }
+
+        // 장엄 강복 안내
+        if (text === "장엄 강복을 할 수 있다.") {
+          var bl = (DATA.extra && DATA.extra.blessings) || [];
+          var items = [];
+          for (var b = 0; b < bl.length; b++) if (bl[b].date && bl[b].date === mmdd) items.push({ tab: "장엄 강복", sub: bl[b].title, content: bl[b].content });
+          for (var c = 0; c < bl.length; c++) if (!bl[c].date) items.push({ tab: bl[c].title || "다른 강복", sub: bl[c].title, content: bl[c].content });
+          if (items.length) {
+            EXPAND_ITEMS["bless"] = items;
+            p.innerHTML = makeToggle("장엄 강복", "bless") + "을 할 수 있다.";
+            p.classList.add("expand-line");
+            p.insertAdjacentHTML("afterend", '<div class="expand-panel" hidden></div>');
+          }
+        }
+      }
+
+      // 긴 설명 접기: 첫 문단이 짧은 요약이면 나머지는 '자세히 보기'로
+      var rule = book.querySelector(".title-rule");
+      var el = rule ? rule.nextElementSibling : null;
+      while (el && el.tagName !== "P" && el.tagName !== "H2") el = el.nextElementSibling;
+      if (el && el.tagName === "P" && !el.className) {
+        var html = el.innerHTML;
+        var cut = html.indexOf("<br>");
+        if (cut > 0) {
+          var tmp = document.createElement("div");
+          tmp.innerHTML = html.slice(0, cut);
+          var summary = (tmp.textContent || "").trim();
+          var rest = html.slice(cut + 4);
+          if (summary.length <= 130 && rest.replace(/<[^>]+>/g, "").length > 150) {
+            el.innerHTML = html.slice(0, cut);
+            el.classList.add("desc-summary");
+            el.insertAdjacentHTML("afterend",
+              '<p class="desc-more-line">' + makeToggle("자세히 보기", "desc") + "</p>" +
+              '<div class="expand-panel desc-detail" hidden><p>' + rest + "</p></div>");
+          }
+        }
+      }
+    }
+
+    document.addEventListener("click", function (e) {
+      var t = e.target && e.target.closest ? e.target : null;
+      if (!t) return;
+
+      var tab = t.closest(".expand-tab");
+      if (tab) {
+        var panel0 = tab.closest(".expand-panel");
+        var idx = tab.getAttribute("data-tab");
+        panel0.querySelectorAll(".expand-tab").forEach(function (x) { x.classList.toggle("active", x === tab); });
+        panel0.querySelectorAll(".expand-body").forEach(function (x) { x.hidden = x.getAttribute("data-tab") !== idx; });
+        return;
+      }
+
+      var btn = t.closest(".expand-link");
+      if (!btn) return;
+      var line = btn.closest("p");
+      var panel = line && line.nextElementSibling;
+      if (!panel || !panel.classList.contains("expand-panel")) return;
+      var key = btn.getAttribute("data-key");
+      var wasOpen = btn.getAttribute("aria-expanded") === "true";
+
+      line.querySelectorAll(".expand-link").forEach(function (x) { x.setAttribute("aria-expanded", "false"); });
+      if (wasOpen) { panel.hidden = true; return; }
+
+      if (key !== "desc") panel.innerHTML = expandPanelHtml(EXPAND_ITEMS[key] || []);
+      panel.hidden = false;
+      btn.setAttribute("aria-expanded", "true");
+      if (key === "desc") btn.firstChild.nodeValue = "간단히 보기";
+    });
+    document.addEventListener("click", function (e) {
+      var btn = e.target && e.target.closest ? e.target.closest('.expand-link[data-key="desc"]') : null;
+      if (btn && btn.getAttribute("aria-expanded") === "false") btn.firstChild.nodeValue = "자세히 보기";
+    });
 
     // 제목 날짜 양옆의 ‹ › 버튼 (이전/다음 고유미사)
     function addDateArrows(prev, next) {
@@ -1401,6 +1721,27 @@
       }
       if (openMonth) html += "</div>";
 
+      var ex = DATA.extra || {};
+      if (ex.commonOrder && ex.commonOrder.length) {
+        html += '<div class="month extra-list"><h2 class="month-name">예수회 공통</h2>';
+        ex.commonOrder.forEach(function (name) {
+          html += '<a class="entry" data-common="' + escapeHtml(name) + '" href="?common=' + encodeURIComponent(name) + '">' +
+            '<span class="entry-date ui-font">공통</span><span class="entry-title">' + escapeHtml(name) + " 기도문 · 독서</span></a>";
+        });
+        html += "</div>";
+      }
+      if (ex.votiveOrder && ex.votiveOrder.length) {
+        html += '<div class="month extra-list"><h2 class="month-name">예수회 신심 미사</h2>';
+        ex.votiveOrder.forEach(function (name) {
+          var v = ex.votives[name];
+          var vkey = v.no || name;
+          html += '<a class="entry" data-votive="' + escapeHtml(vkey) + '" href="?votive=' + encodeURIComponent(vkey) + '">' +
+            '<span class="entry-date ui-font">신심 ' + escapeHtml(v.no || "") + "</span>" +
+            '<span class="entry-title">' + vestmentBadge(v.color) + escapeHtml(name) + "</span></a>";
+        });
+        html += "</div>";
+      }
+
       return html;
     }
 
@@ -1413,7 +1754,7 @@
       var home = document.querySelector(".nav-button[data-home]");
       var list = document.querySelector('.nav-button[data-view="list"]');
       if (home) {
-        home.classList.toggle("home", view !== "list");
+        home.classList.toggle("home", view === "day");
         // 오늘이 고유미사 날이면 버튼 이름을 '오늘의 고유미사'로
         var isTodayProper = !!(DATA && DATA.info && DATA.info[todayMMDD()]);
         home.textContent = isTodayProper ? "오늘의 고유미사" : "다가오는 고유미사";
@@ -1424,6 +1765,8 @@
     function stateToUrl(state, home) {
       if (home) return window.location.pathname;
       if (state.view === "list") return "?view=list";
+      if (state.view === "common") return "?common=" + encodeURIComponent(state.key);
+      if (state.view === "votive") return "?votive=" + encodeURIComponent(state.key);
       return "?date=" + state.date;
     }
 
@@ -1438,6 +1781,11 @@
       if (state.view === "list") {
         document.getElementById("book").innerHTML = listHtml();
         title = "전체 목록 — 예수회 고유미사";
+      } else if (state.view === "common" || state.view === "votive") {
+        var sp = getSpecialPage(state);
+        document.getElementById("book").innerHTML = sp ? sp.body :
+          '<div class="status ui-font">해당 내용을 찾지 못했습니다. <a data-view="list" href="?view=list">전체 목록</a></div>';
+        if (sp) { title = sp.title; enhanceProprium(null); }
       } else {
         var prevDate = getPrevDate(state.date, DATA.dates);
         var nextDate = getNextDate(state.date, DATA.dates);
@@ -1453,6 +1801,7 @@
         if (proprium) {
           title = proprium.title;
           addDateArrows(prev, next);
+          enhanceProprium(currentState && currentState.date);
           var saintName = String((DATA.info[state.date] || {}).title || "").split(/\s*;\s*/)[0];
           showSaintImage(state.date, saintName);
         }
@@ -1490,6 +1839,8 @@
       var params = null;
       try { params = new URLSearchParams(window.location.search); } catch (e) {}
       if (params && params.get("view") === "list") return { view: "list" };
+      if (params && params.get("common")) return { view: "common", key: params.get("common") };
+      if (params && params.get("votive")) return { view: "votive", key: params.get("votive") };
 
       var q = params ? (params.get("date") || "") : "";
       return isValidMMDD(q) ? { view: "day", date: q } : defaultState();
@@ -1497,12 +1848,16 @@
 
     document.addEventListener("click", function (e) {
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-      var a = e.target.closest ? e.target.closest("a[data-date], a[data-home], a[data-view]") : null;
+      var a = e.target.closest ? e.target.closest("a[data-date], a[data-home], a[data-view], a[data-common], a[data-votive]") : null;
       if (!a || !DATA) return;
 
       e.preventDefault();
       if (a.hasAttribute("data-home")) {
         render(defaultState(), { push: true, home: true, scroll: true });
+      } else if (a.hasAttribute("data-common")) {
+        render({ view: "common", key: a.getAttribute("data-common") }, { push: true, scroll: true });
+      } else if (a.hasAttribute("data-votive")) {
+        render({ view: "votive", key: a.getAttribute("data-votive") }, { push: true, scroll: true });
       } else if (a.hasAttribute("data-view")) {
         render({ view: a.getAttribute("data-view") }, { push: true, scroll: true });
       } else {
