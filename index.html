@@ -851,6 +851,17 @@
     /* 참고 줄은 아래 항목(제1독서·입당송)에 붙어 보이게 */
     p.common-ref { margin: 2.2em 0 0 !important; }
     p.common-ref + h2 { margin-top: 0.35em; }
+
+    /* 부활 시기 / 아닐 때 독서 구분 */
+    .season-divider {
+      margin: 2.4em 0 0;
+      padding-top: 0.55em;
+      border-top: 1px solid var(--accent-light);
+      color: var(--rubric);
+      font-size: 0.74em;
+    }
+    .season-divider + h2 { margin-top: 0.5em; }
+    p.common-ref + .season-divider { margin-top: 0.7em; }
   </style>
 
   <script>
@@ -1694,6 +1705,26 @@
         }).join(" 또는 ");
         for (var rr = 1; rr < readRefs.length; rr++) readRefs[rr].parentNode.removeChild(readRefs[rr]);
         fitOneLine(readRefs[0]);
+      }
+
+      // 부활 시기 / 부활 시기가 아닐 때 독서가 나뉜 날: 구분선과 작은 안내
+      var h2s = [].slice.call(book.querySelectorAll("h2"));
+      var isEaster = function (h) { var n = h.querySelector(".item-name"); return n && /\(\s*부활\s*시기\s*\)/.test(n.textContent); };
+      var firstEaster = null, firstOther = null;
+      h2s.forEach(function (h) {
+        var n = h.querySelector(".item-name");
+        if (!n || !/^제1독서/.test(n.textContent)) return;
+        if (isEaster(h)) { if (!firstEaster) firstEaster = h; }
+        else if (firstEaster && !firstOther) firstOther = h;
+      });
+      if (firstEaster && firstOther) {
+        firstEaster.insertAdjacentHTML("beforebegin", '<div class="season-divider ui-font">부활 시기에는 아래의 독서를 활용한다.</div>');
+        firstOther.insertAdjacentHTML("beforebegin", '<div class="season-divider ui-font">부활 시기가 아닐 때에는 아래의 독서를 활용한다.</div>');
+        // 항목 이름의 "(부활시기)"는 구분선이 알려 주므로 떼기
+        h2s.forEach(function (h) {
+          var n = h.querySelector(".item-name");
+          if (n) n.textContent = n.textContent.replace(/\s*\(\s*부활\s*시기\s*\)/, "");
+        });
       }
 
       // 긴 설명 접기: 첫 문단이 짧은 요약이면 나머지는 '자세히 보기'로
