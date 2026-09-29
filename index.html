@@ -862,6 +862,10 @@
     }
     .season-divider + h2 { margin-top: 0.5em; }
     p.common-ref + .season-divider { margin-top: 0.7em; }
+
+    /* (알렐루야 부활 시기) */
+    .easter-alleluia { white-space: nowrap; }
+    .easter-rub { color: var(--rubric); font-size: 0.78em; }
   </style>
 
   <script>
@@ -1706,6 +1710,18 @@
         for (var rr = 1; rr < readRefs.length; rr++) readRefs[rr].parentNode.removeChild(readRefs[rr]);
         fitOneLine(readRefs[0]);
       }
+
+      // "(부활 시기 알렐루야.)"가 적힌 곳만 → (알렐루야 부활 시기): 알렐루야는 본문 글씨, 부활 시기는 작은 지시어
+      (function () {
+        var w = document.createTreeWalker(book, NodeFilter.SHOW_TEXT, null), n, hits = [];
+        while ((n = w.nextNode())) if (n.nodeValue.indexOf("(부활 시기 알렐루야.)") > -1) hits.push(n);
+        hits.forEach(function (tn) {
+          var span = document.createElement("span");
+          span.innerHTML = escapeHtml(tn.nodeValue).split("(부활 시기 알렐루야.)")
+            .join('<span class="easter-alleluia">(알렐루야 <span class="easter-rub">부활 시기</span>)</span>');
+          tn.parentNode.replaceChild(span, tn);
+        });
+      })();
 
       // 부활 시기 / 부활 시기가 아닐 때 독서가 나뉜 날: 구분선과 작은 안내
       var h2s = [].slice.call(book.querySelectorAll("h2"));
