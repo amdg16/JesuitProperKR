@@ -1527,6 +1527,65 @@
       if (e.key === "Escape") closeLightbox();
     });
 
+    // 모바일 스와이프: 날짜 페이지에서 좌우로 밀어 이전/다음 고유미사로
+    //  - 손가락을 왼쪽으로 밀면(책장 넘기듯) 다음 날, 오른쪽으로 밀면 이전 날
+    //  - 화면 가장자리(안드로이드 '뒤로 가기' 제스처 영역)에서 시작한 동작은 무시
+    (function () {
+      var book = document.getElementById("book");
+      var sx = 0, sy = 0, st = 0, active = false, dx = 0, locked = null;
+      var EDGE = 28, MIN = 70, MAXTIME = 700;
+
+      function arrowFor(dir) { return document.querySelector("#book .date-arrow." + dir + ":not(.disabled)"); }
+      function reset() {
+        book.style.transition = "transform 0.18s ease, opacity 0.18s ease";
+        book.style.transform = ""; book.style.opacity = "";
+      }
+
+      document.addEventListener("touchstart", function (e) {
+        active = false; locked = null; dx = 0;
+        if (!currentState || currentState.view !== "day") return;
+        if (e.touches.length !== 1 || document.documentElement.classList.contains("lightbox-open")) return;
+        var t = e.touches[0], w = window.innerWidth;
+        if (t.clientX < EDGE || t.clientX > w - EDGE) return;
+        if (e.target.closest && e.target.closest("input, textarea, .expand-tabs, pre, table")) return;
+        sx = t.clientX; sy = t.clientY; st = Date.now(); active = true;
+        book.style.transition = "none";
+      }, { passive: true });
+
+      document.addEventListener("touchmove", function (e) {
+        if (!active) return;
+        var t = e.touches[0], mx = t.clientX - sx, my = t.clientY - sy;
+        if (locked === null && (Math.abs(mx) > 10 || Math.abs(my) > 10)) {
+          locked = Math.abs(mx) > Math.abs(my) * 1.5 ? "x" : "y";
+        }
+        if (locked !== "x") return;
+        dx = mx;
+        var damp = Math.max(-60, Math.min(60, dx * 0.35));
+        book.style.transform = "translateX(" + damp + "px)";
+        book.style.opacity = String(1 - Math.min(0.25, Math.abs(damp) / 240));
+      }, { passive: true });
+
+      document.addEventListener("touchend", function () {
+        if (!active) return;
+        active = false;
+        var quick = (Date.now() - st) < MAXTIME;
+        var sel = window.getSelection && String(window.getSelection());
+        if (locked === "x" && Math.abs(dx) >= MIN && quick && !sel) {
+          var a = arrowFor(dx < 0 ? "next" : "prev");
+          if (a) {
+            book.style.transition = "transform 0.12s ease, opacity 0.12s ease";
+            book.style.transform = "translateX(" + (dx < 0 ? -40 : 40) + "px)";
+            book.style.opacity = "0.4";
+            setTimeout(function () { book.style.transition = "none"; book.style.transform = ""; book.style.opacity = ""; a.click(); }, 120);
+            return;
+          }
+        }
+        reset();
+      }, { passive: true });
+
+      document.addEventListener("touchcancel", function () { active = false; reset(); }, { passive: true });
+    })();
+
     // 맨 위로 버튼: 어느 정도 내려가면 오른쪽 아래에 나타남
     (function () {
       var btn = document.getElementById("to-top");
