@@ -897,6 +897,20 @@
     .to-top:hover { background: var(--white); }
     html.lightbox-open .to-top { display: none; }
     @media print { .to-top { display: none !important; } }
+
+    /* 신심 미사 페이지: 흰 바탕 + 금빛 글씨 + 그림 가장자리 흐리게 */
+    html.votive-view body { background: #f4f1ea; }
+    html.votive-view .book { background: #ffffff; border-color: #e6dfcf; }
+    html.votive-view .item-name, html.votive-view h1 .h1-label,
+    html.votive-view h2.part-heading, html.votive-view .title-rule span, html.votive-view .end-mark { color: #9a7a35; }
+    html.votive-view p.rubric, html.votive-view .expand-link { color: #9a7a35; }
+    html.votive-view hr.item-divider, html.votive-view .title-rule::before, html.votive-view .title-rule::after { background: #e8dcc0; }
+    html.votive-view .saint-figure img {
+      padding: 0; border: 0; background: none; box-shadow: none;
+      -webkit-mask-image: radial-gradient(ellipse 72% 72% at 50% 50%, #000 58%, transparent 100%);
+              mask-image: radial-gradient(ellipse 72% 72% at 50% 50%, #000 58%, transparent 100%);
+    }
+    @media print { html.votive-view .saint-figure img { -webkit-mask-image: none; mask-image: none; } }
   </style>
 
   <script>
@@ -1449,6 +1463,9 @@
       return html;
     }
 
+    // 신심 미사 그림: 해당 성인 축일 그림을 그대로 씀 (1 이냐시오 7/31, 2 하비에르 12/3, 3 알로이시오 6/21)
+    var VOTIVE_IMAGE = { "1": "0731", "2": "1203", "3": "0621" };
+
     // 예수회 공통(순교자·목자·선교사·수도자) / 신심 미사 페이지
     function getSpecialPage(state) {
       var ex = DATA.extra || {};
@@ -1466,9 +1483,11 @@
         '<span class="h1-name">' + vestmentBadge(block.color) + escapeHtml(block.name) + "</span>" +
         "</h1>" +
         '<div class="title-rule" aria-hidden="true"><span>✠</span></div>';
+      var imgKey = (state.view === "votive") ? (VOTIVE_IMAGE[block.no] || "") : "";
+      if (imgKey) html += '<figure class="saint-figure" id="saint-figure" hidden></figure>';
       html += renderItemRows(block.rows);
       html += '<div class="end-mark" aria-hidden="true">✠</div>';
-      return { title: block.name + " — 예수회 고유미사", body: html };
+      return { title: block.name + " — 예수회 고유미사", body: html, imgKey: imgKey, name: block.name };
     }
 
     function specialKeyFromName(view, name) { return name; }
@@ -1487,7 +1506,7 @@
         img.decoding = "async";
         img.onload = function () {
           var fig = document.getElementById("saint-figure");
-          if (!fig || !currentState || currentState.date !== mmdd) return; // 그사이 다른 날짜로 넘어감
+          if (!fig || !currentState || (currentState.imgKey || currentState.date) !== mmdd) return; // 그사이 다른 페이지로 넘어감
           fig.innerHTML = "";
           img.className = "zoomable";
           img.title = "눌러서 크게 보기";
@@ -2086,6 +2105,7 @@
       var miniHtml = "";
       var title = "예수회 고유미사";
 
+      document.documentElement.classList.toggle("votive-view", state.view === "votive");
       if (state.view === "list") {
         document.getElementById("book").innerHTML = listHtml();
         title = "전체 목록 — 예수회 고유미사";
@@ -2093,7 +2113,12 @@
         var sp = getSpecialPage(state);
         document.getElementById("book").innerHTML = sp ? sp.body :
           '<div class="status ui-font">해당 내용을 찾지 못했습니다. <a data-view="list" href="?view=list">전체 목록</a></div>';
-        if (sp) { title = sp.title; enhanceProprium(null); }
+        if (sp) {
+          title = sp.title;
+          state.imgKey = sp.imgKey || "";
+          enhanceProprium(null);
+          if (sp.imgKey) showSaintImage(sp.imgKey, sp.name);
+        }
       } else {
         var prevDate = getPrevDate(state.date, DATA.dates);
         var nextDate = getNextDate(state.date, DATA.dates);
