@@ -870,6 +870,33 @@
     /* 항목 제목 밑줄 바로 아래 오는 구분 안내는 선 없이 글씨만 */
     hr.item-divider + .season-divider { margin-top: 0; padding-top: 0; border-top: 0; }
     .season-divider + p { margin-top: 0.4em; }
+
+    /* 맨 위로 버튼 */
+    .to-top {
+      position: fixed;
+      right: calc(env(safe-area-inset-right, 0px) + 16px);
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
+      z-index: 50;
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: rgba(255,253,248,0.92);
+      box-shadow: 0 2px 8px rgba(50,40,25,0.12);
+      color: var(--accent);
+      font-size: 18px;
+      line-height: 38px;
+      text-align: center;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(8px);
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .to-top.show { opacity: 1; pointer-events: auto; transform: none; }
+    .to-top:hover { background: var(--white); }
+    html.lightbox-open .to-top { display: none; }
+    @media print { .to-top { display: none !important; } }
   </style>
 
   <script>
@@ -956,6 +983,8 @@
       </a>
     </div>
   </main>
+
+  <button type="button" class="to-top ui-font" id="to-top" aria-label="맨 위로" title="맨 위로">↑</button>
 
   <div class="lightbox" id="lightbox" hidden role="dialog" aria-label="그림 크게 보기">
     <button type="button" class="lightbox-close" aria-label="닫기">✕</button>
@@ -1497,6 +1526,24 @@
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape") closeLightbox();
     });
+
+    // 맨 위로 버튼: 어느 정도 내려가면 오른쪽 아래에 나타남
+    (function () {
+      var btn = document.getElementById("to-top");
+      if (!btn) return;
+      var ticking = false;
+      function update() {
+        btn.classList.toggle("show", (window.pageYOffset || 0) > 700);
+        ticking = false;
+      }
+      window.addEventListener("scroll", function () {
+        if (!ticking) { ticking = true; window.requestAnimationFrame(update); }
+      }, { passive: true });
+      btn.addEventListener("click", function () {
+        try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) { window.scrollTo(0, 0); }
+      });
+      update();
+    })();
     document.addEventListener("click", function (e) {
       if (e.target && e.target.closest && e.target.closest("#lightbox")) closeLightbox();
     });
