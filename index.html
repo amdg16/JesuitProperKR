@@ -1575,6 +1575,7 @@
         '<span class="h1-date h1-label">' + escapeHtml(label) + "</span>" +
         '<span class="h1-name">' + vestmentBadge(block.color) + escapeHtml(block.name) + "</span>" +
         "</h1>" +
+        (state.view === "votive" && block.no ? votiveTabsHtml(block.no, "proper") : "") +
         '<div class="title-rule" aria-hidden="true"><span>✠</span></div>';
       var imgKey = (state.view === "votive") ? (VOTIVE_IMAGE[block.no] || "") : "";
       if (imgKey) html += '<figure class="saint-figure" id="saint-figure" hidden></figure>';
@@ -2171,6 +2172,13 @@
       }
 
       if (!mine.length) return "";
+      // 신심 미사의 독서 묶음(독서 1, 독서 2)은 탭으로
+      if (mine.length > 1 && mine.every(function (r) { return /\(독서 \d\)$/.test(r.item); })) {
+        return tabsBlockHtml(mine.map(function (r) {
+          var set = r.item.match(/\((독서 \d)\)$/)[1];
+          return { tab: set, html: properCardHtml({ item: baseItemName(r.item), content: r.content }, slot) };
+        }));
+      }
       return mine.map(function (r) { return properCardHtml(r, mine.length > 1 ? r.item : slot); }).join("");
     }
 
@@ -2197,21 +2205,41 @@
       return "";
     }
 
+    function votiveBlockByNo(no) {
+      var vs = (DATA.extra && DATA.extra.votives) || {};
+      for (var k in vs) if (vs[k].no === String(no)) return vs[k];
+      return null;
+    }
+
     function getMassPage(mmdd) {
       if (!ORDO || !DATA) return null;
-      var rows = DATA.rows.filter(function (r) { return r.date === mmdd; });
+      var votive = /^v\d$/.test(String(mmdd)) ? votiveBlockByNo(String(mmdd).slice(1)) : null;
+      var rows, info;
+      if (votive) {
+        // 신심 미사: 독서 묶음(독서 1, 독서 2)을 항목 이름에 붙여 구분
+        var setName = "";
+        rows = [];
+        votive.rows.forEach(function (r) {
+          if (r.item === "구분") { setName = r.content; return; }
+          if (r.item === "일러두기" || r.item === "안내" || r.item === "큰구분") return;
+          rows.push({ item: setName && /독서|화답송|복음/.test(r.item) ? r.item + "(" + setName + ")" : r.item, content: r.content });
+        });
+        info = { title: votive.name, color: votive.color, rank: "" };
+      } else {
+        rows = DATA.rows.filter(function (r) { return r.date === mmdd; });
+        info = DATA.info[mmdd] || {};
+      }
       if (!rows.length) return null;
-      var info = DATA.info[mmdd] || {};
       var has = function (base) { return rows.some(function (r) { return baseItemName(r.item) === base; }); };
       var cond = { gloria: has("대영광송"), creed: has("신경"), reading2: rows.some(function (r) { return r.content && baseItemName(r.item) === "제2독서"; }) };
 
       var rankLabel = escapeHtml(String(info.rank || "").replace(/\[/g, "(").replace(/\]/g, ")"));
       var html = '<h1 class="feast-title">' +
-        '<span class="h1-date">' + escapeHtml(formatMonthDay(mmdd)) + "</span>" +
+        (votive ? '<span class="h1-date h1-label">예수회 신심 미사</span>' : '<span class="h1-date">' + escapeHtml(formatMonthDay(mmdd)) + "</span>") +
         '<span class="h1-name">' + vestmentBadge(info.color) + escapeHtml(info.title || "") + "</span>" +
         (info.rank ? '<span class="rank-line ui-font">' + rankLabel + "</span>" : "") +
         "</h1>" +
-        modeTabsHtml(mmdd, "mass") +
+        (votive ? votiveTabsHtml(votive.no, "mass") : modeTabsHtml(mmdd, "mass")) +
         '<div class="title-rule" aria-hidden="true"><span>✠</span></div>' +
         '<figure class="saint-figure" id="saint-figure" hidden></figure>' +
         '<div class="mass-tools ui-font"><button type="button" class="mass-rubric-toggle" id="rubric-toggle"></button></div>';
@@ -2225,9 +2253,9 @@
         list.push(b);
       });
       html += renderOrdoList(list, function (b) { return massSlotHtml(b.s, rows, mmdd); });
-      html += '<p class="mass-source ui-font">' + escapeHtml(ORDO.source || "") + "</p>";
       html += '<div class="end-mark" aria-hidden="true">✠</div>';
-      return { title: formatMonthDay(mmdd) + " 미사 — 예수회 고유미사", body: html };
+      return { title: (votive ? votive.name : formatMonthDay(mmdd)) + " 미사 — 예수회 고유미사", body: html,
+               imgKey: votive ? (VOTIVE_IMAGE[votive.no] || "") : mmdd, name: String(info.title || "").split(/\s*;\s*/)[0], votive: !!votive };
     }
 
     // 같은 날의 두 가지 보기: 고유 부분 | 미사 전체
@@ -2243,6 +2271,16 @@
 
     // 지시문은 페이지를 열 때마다 기본으로 켜짐(보임). 끈 상태는 그 페이지를 보는 동안만 유지
     var RUBRICS_HIDDEN = false;
+    function votiveTabsHtml(no, active) {
+      var p = (active === "proper")
+        ? '<span class="mode-tab active" aria-current="page">고유 부분</span>'
+        : '<a class="mode-tab" data-votive="' + no + '" href="?votive=' + no + '">고유 부분</a>';
+      var m = (active === "mass")
+        ? '<span class="mode-tab active" aria-current="page">미사 전체</span>'
+        : '<a class="mode-tab" data-mass="v' + no + '" href="?mass=v' + no + '">미사 전체</a>';
+      return '<nav class="mode-tabs ui-font" aria-label="보기 전환">' + p + m + "</nav>";
+    }
+
     function rubricsHidden() { return RUBRICS_HIDDEN; }
     function applyRubricToggle() {
       var hide = rubricsHidden();
@@ -2409,8 +2447,10 @@
           document.getElementById("book").innerHTML = mp.body;
           title = mp.title;
           applyRubricToggle();
-          enhanceProprium(state.date);
-          showSaintImage(state.date, String((DATA.info[state.date] || {}).title || "").split(/\s*;\s*/)[0]);
+          enhanceProprium(mp.votive ? null : state.date);
+          state.imgKey = mp.imgKey || "";
+          document.documentElement.classList.toggle("votive-view", !!mp.votive);
+          if (mp.imgKey) showSaintImage(mp.imgKey, mp.name);
         } else {
           document.getElementById("book").innerHTML = '<div class="status ui-font">미사 통상문을 불러오는 중…</div>';
           loadOrdo().then(function () {
@@ -2452,7 +2492,7 @@
 
       document.getElementById("nav-bottom").innerHTML = navHtml;
       document.title = title;
-      setToolbar(state.view);
+      setToolbar(state.view === "mass" && /^v\d$/.test(String(state.date)) ? "votive" : state.view);
 
       if (opts.push) {
         try {
@@ -2483,7 +2523,7 @@
       try { params = new URLSearchParams(window.location.search); } catch (e) {}
       if (params && params.get("view") === "list") return { view: "list" };
       if (params && params.get("common")) return { view: "common", key: params.get("common") };
-      if (params && params.get("mass")) return { view: "mass", date: normalizeDate(params.get("mass")) || params.get("mass") };
+      if (params && params.get("mass")) { var mq = params.get("mass"); return { view: "mass", date: /^v\d$/.test(mq) ? mq : (normalizeDate(mq) || mq) }; }
       if (params && params.get("votive")) return { view: "votive", key: params.get("votive") };
 
       var q = params ? (params.get("date") || "") : "";
