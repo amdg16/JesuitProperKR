@@ -2297,9 +2297,9 @@
       document.documentElement.classList.toggle("hide-rubrics", hide);
       var b = document.getElementById("rubric-toggle");
       if (b) {
-        b.innerHTML = '<span class="sw" aria-hidden="true"></span>지시문';
+        b.innerHTML = '<span class="sw" aria-hidden="true"></span>루브릭 보기';
         b.setAttribute("aria-pressed", hide ? "false" : "true");
-        b.title = hide ? "지시문 보이기" : "지시문 숨기기";
+        b.title = hide ? "루브릭 보이기" : "루브릭 숨기기";
       }
     }
     document.addEventListener("click", function (e) {
