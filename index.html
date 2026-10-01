@@ -949,6 +949,57 @@
     .mass-open + p.common-ref { margin-top: 0.4em !important; }
     .mass-open + h2 { margin-top: 0.6em; }
     .mass-open a { padding: 3px 10px; font-size: 0.8em; font-weight: 600; border-radius: 5px; }
+
+    /* 미사 통상문 입구: 카드 맨 위 오른쪽 */
+    .mass-open { margin: -0.4em 0 0.4em !important; text-align: right; }
+    .mass-open + h1 { margin-top: 0; }
+
+    /* 미사 통상문 입구: 카드 테두리 오른쪽 위 모서리에 붙은 탭 */
+    .book { position: relative; }
+    .mass-open { position: absolute; top: -1px; right: -1px; margin: 0 !important; z-index: 2; }
+    .mass-open a {
+      display: block; padding: 4px 11px !important;
+      border: 1px solid var(--line) !important; border-radius: 0 3px 0 7px !important;
+      background: rgba(255,255,255,0.75) !important;
+      font-size: 0.78em !important;
+    }
+    .mass-open + h1 { margin-top: 0; }
+
+    /* 미사 통상문 입구: 본문 오른쪽 끝선에 맞춤. 넓은 화면은 날짜와 같은 줄, 좁은 화면은 날짜 위 */
+    .book { position: static; }
+    h1.feast-title { position: relative; }
+    h1 .mass-open {
+      position: static; display: block; margin: 0 0 0.35em !important;
+      font-size: 1rem; line-height: 1; text-align: right;
+    }
+    h1 .mass-open a {
+      display: inline-block; padding: 4px 10px !important;
+      border: 1px solid var(--line) !important; border-radius: 5px !important;
+      background: rgba(255,255,255,0.6) !important;
+      font-size: 12.5px !important; font-weight: 600; letter-spacing: 0;
+    }
+    @media (min-width: 640px) {
+      h1 .mass-open { position: absolute; top: 0.15em; right: 0; margin: 0 !important; }
+    }
+
+    /* 보기 전환 탭: 고유 부분 | 미사 전체 */
+    .mode-tabs { display: flex; justify-content: center; gap: 22px; margin: 0.9em 0 -0.2em; font-size: 0.86em; }
+    .mode-tab { padding: 2px 2px 5px; color: var(--muted); text-decoration: none; border-bottom: 2px solid transparent; font-weight: 500; }
+    .mode-tab.active { color: var(--accent); font-weight: 700; border-bottom-color: var(--accent); }
+    a.mode-tab:hover { color: var(--accent); }
+    .mass-tools { justify-content: flex-end; margin: -0.6em 0 0.4em; }
+    @media print { .mode-tabs { display: none !important; } }
+
+    /* 지시문 켜기/끄기: 작은 스위치 */
+    .mass-tools { margin: -0.7em 0 0; }
+    .mass-rubric-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: none;
+      color: var(--rubric); font-size: 11.5px; cursor: pointer; }
+    .mass-rubric-toggle .sw { position: relative; width: 26px; height: 15px; border-radius: 999px; background: var(--rubric); opacity: 0.85; transition: background .15s; }
+    .mass-rubric-toggle .sw::after { content: ""; position: absolute; top: 2px; left: 13px; width: 11px; height: 11px; border-radius: 50%; background: #fff; transition: left .15s; }
+    html.hide-rubrics .mass-rubric-toggle { color: var(--muted); }
+    html.hide-rubrics .mass-rubric-toggle .sw { background: #cfc8bc; }
+    html.hide-rubrics .mass-rubric-toggle .sw::after { left: 2px; }
+    .mass-tools + h2.mass-part { margin-top: 1.4em; }
   </style>
 
   <script>
@@ -1451,8 +1502,8 @@
         nameParts.html +
         (rank ? '<span class="rank-line ui-font">' + rankLabel + "</span>" : "") +
         "</h1>" +
-        '<div class="title-rule" aria-hidden="true"><span>✠</span></div>' +
-        '<p class="mass-open ui-font"><a data-mass="' + mmdd + '" href="?mass=' + mmdd + '">미사 통상문과 함께 보기</a></p>';
+        modeTabsHtml(mmdd, "proper") +
+        '<div class="title-rule" aria-hidden="true"><span>✠</span></div>';
 
       html += '<figure class="saint-figure" id="saint-figure" hidden></figure>';
 
@@ -1951,17 +2002,6 @@
         });
       }
 
-      // "미사 통상문과 함께 보기"를 첫 항목(입당송) 바로 위, 참고 줄보다 위로 옮기기
-      (function () {
-        var mo = book.querySelector("p.mass-open");
-        var h = book.querySelector("h2");
-        if (!mo || !h) return;
-        var anchor = h;
-        var prev = h.previousElementSibling;
-        if (prev && prev.classList && prev.classList.contains("common-ref")) anchor = prev;
-        anchor.parentNode.insertBefore(mo, anchor);
-      })();
-
       // 긴 설명 접기: 첫 문단이 짧은 요약이면 나머지는 '자세히 보기'로
       var rule = book.querySelector(".title-rule");
       var el = rule ? rule.nextElementSibling : null;
@@ -2090,7 +2130,7 @@
       if (slot === "감사송") {
         if (mine.length) {
           var r0 = { item: "감사송", content: stripPrefaceFrame(mine[0].content) };
-          return '<div class="proper-slot"><div class="proper-label ui-font">오늘 미사의 감사송</div>' + formatPlainText(r0.content) + "</div>";
+          return '<div class="proper-slot"><div class="proper-label ui-font">감사송</div>' + formatPlainText(r0.content) + "</div>";
         }
         // 예물 기도 아래에 적힌 "순교자 감사송" 등 안내에서 찾기
         var names = [];
@@ -2113,7 +2153,7 @@
 
       if (slot === "감사 기도") {
         if (!ORDO) return "";
-        var mk = function (list) { return list.map(ordoBlockHtml).join(""); };
+        var mk = function (list) { return renderOrdoList(list, null); };
         return tabsBlockHtml([{ tab: "감사 기도 제2양식", html: mk(ORDO.ep2 || []) }, { tab: "감사 기도 제3양식", html: mk(ORDO.ep3 || []) }]);
       }
 
@@ -2128,7 +2168,21 @@
       }
 
       if (!mine.length) return "";
-      return mine.map(function (r) { return properCardHtml(r, mine.length > 1 ? r.item : "오늘 미사의 " + slot); }).join("");
+      return mine.map(function (r) { return properCardHtml(r, mine.length > 1 ? r.item : slot); }).join("");
+    }
+
+    // 이어지는 기도문(주고받는 말)은 한 문단으로 묶어 줄만 바꿈
+    function renderOrdoList(list, slotFn) {
+      var h = "", buf = [];
+      function flush() { if (buf.length) { h += ordoTextHtml(buf.join("\n")); buf = []; } }
+      list.forEach(function (b) {
+        if (b.k === "T") { buf.push(b.t); return; }
+        flush();
+        if (b.k === "SLOT") { h += slotFn ? slotFn(b) : ""; return; }
+        h += ordoBlockHtml(b);
+      });
+      flush();
+      return h;
     }
 
     function ordoBlockHtml(b) {
@@ -2149,28 +2203,37 @@
 
       var rankLabel = escapeHtml(String(info.rank || "").replace(/\[/g, "(").replace(/\]/g, ")"));
       var html = '<h1 class="feast-title">' +
-        '<span class="h1-date h1-label">미사 통상문과 함께</span>' +
-        '<span class="h1-name">' + escapeHtml(formatMonthDay(mmdd)) + "</span>" +
+        '<span class="h1-date">' + escapeHtml(formatMonthDay(mmdd)) + "</span>" +
         '<span class="h1-name">' + vestmentBadge(info.color) + escapeHtml(info.title || "") + "</span>" +
         (info.rank ? '<span class="rank-line ui-font">' + rankLabel + "</span>" : "") +
         "</h1>" +
-        '<div class="mass-tools ui-font">' +
-          '<a class="mass-back" data-date="' + mmdd + '" href="?date=' + mmdd + '">← 고유 부분만 보기</a>' +
-          '<button type="button" class="mass-rubric-toggle" id="rubric-toggle"></button>' +
-        "</div>" +
-        '<div class="title-rule" aria-hidden="true"><span>✠</span></div>';
+        modeTabsHtml(mmdd, "mass") +
+        '<div class="title-rule" aria-hidden="true"><span>✠</span></div>' +
+        '<div class="mass-tools ui-font"><button type="button" class="mass-rubric-toggle" id="rubric-toggle"></button></div>';
 
       var skip = 0;
+      var list = [];
       (ORDO.main || []).forEach(function (b) {
         if (b.k === "IF") { if (skip || !cond[b.c]) skip++; return; }
         if (b.k === "ENDIF") { if (skip) skip--; return; }
         if (skip) return;
-        if (b.k === "SLOT") { html += massSlotHtml(b.s, rows, mmdd); return; }
-        html += ordoBlockHtml(b);
+        list.push(b);
       });
+      html += renderOrdoList(list, function (b) { return massSlotHtml(b.s, rows, mmdd); });
       html += '<p class="mass-source ui-font">' + escapeHtml(ORDO.source || "") + "</p>";
       html += '<div class="end-mark" aria-hidden="true">✠</div>';
       return { title: formatMonthDay(mmdd) + " 미사 — 예수회 고유미사", body: html };
+    }
+
+    // 같은 날의 두 가지 보기: 고유 부분 | 미사 전체
+    function modeTabsHtml(mmdd, active) {
+      var p = (active === "proper")
+        ? '<span class="mode-tab active" aria-current="page">고유 부분</span>'
+        : '<a class="mode-tab" data-date="' + mmdd + '" href="?date=' + mmdd + '">고유 부분</a>';
+      var m = (active === "mass")
+        ? '<span class="mode-tab active" aria-current="page">미사 전체</span>'
+        : '<a class="mode-tab" data-mass="' + mmdd + '" href="?mass=' + mmdd + '">미사 전체</a>';
+      return '<nav class="mode-tabs ui-font" aria-label="보기 전환">' + p + m + "</nav>";
     }
 
     function rubricsHidden() { try { return localStorage.getItem("jp-hide-rubrics") === "1"; } catch (e) { return false; } }
@@ -2178,7 +2241,11 @@
       var hide = rubricsHidden();
       document.documentElement.classList.toggle("hide-rubrics", hide);
       var b = document.getElementById("rubric-toggle");
-      if (b) b.textContent = hide ? "지시문 보이기" : "지시문 숨기기";
+      if (b) {
+        b.innerHTML = '<span class="sw" aria-hidden="true"></span>지시문';
+        b.setAttribute("aria-pressed", hide ? "false" : "true");
+        b.title = hide ? "지시문 보이기" : "지시문 숨기기";
+      }
     }
     document.addEventListener("click", function (e) {
       var b = e.target && e.target.closest ? e.target.closest("#rubric-toggle") : null;
