@@ -2213,6 +2213,7 @@
         "</h1>" +
         modeTabsHtml(mmdd, "mass") +
         '<div class="title-rule" aria-hidden="true"><span>✠</span></div>' +
+        '<figure class="saint-figure" id="saint-figure" hidden></figure>' +
         '<div class="mass-tools ui-font"><button type="button" class="mass-rubric-toggle" id="rubric-toggle"></button></div>';
 
       var skip = 0;
@@ -2372,7 +2373,7 @@
       var home = document.querySelector(".nav-button[data-home]");
       var list = document.querySelector('.nav-button[data-view="list"]');
       if (home) {
-        home.classList.toggle("home", view === "day");
+        home.classList.toggle("home", view === "day" || view === "mass");
         // 오늘이 고유미사 날이면 버튼 이름을 '오늘의 고유미사'로
         var isTodayProper = !!(DATA && DATA.info && DATA.info[todayMMDD()]);
         home.textContent = isTodayProper ? "오늘의 고유미사" : "다가오는 고유미사";
@@ -2409,6 +2410,7 @@
           title = mp.title;
           applyRubricToggle();
           enhanceProprium(state.date);
+          showSaintImage(state.date, String((DATA.info[state.date] || {}).title || "").split(/\s*;\s*/)[0]);
         } else {
           document.getElementById("book").innerHTML = '<div class="status ui-font">미사 통상문을 불러오는 중…</div>';
           loadOrdo().then(function () {
