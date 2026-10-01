@@ -1000,6 +1000,9 @@
     html.hide-rubrics .mass-rubric-toggle .sw { background: #cfc8bc; }
     html.hide-rubrics .mass-rubric-toggle .sw::after { left: 2px; }
     .mass-tools + h2.mass-part { margin-top: 1.4em; }
+
+    /* "또는"은 지시문이 아니라 선택을 알려 주는 말이라 늘 보이게 */
+    p.mass-or { margin: 0.5em 0; color: var(--rubric); font-size: 0.8em; font-weight: 600; }
   </style>
 
   <script>
@@ -2188,6 +2191,7 @@
     function ordoBlockHtml(b) {
       if (b.k === "H1") return '<h2 class="mass-part ui-font">' + escapeHtml(b.t) + "</h2>";
       if (b.k === "H2") return '<h3 class="mass-sec"><span class="item-name">' + escapeHtml(b.t) + "</span></h3><hr class='item-divider'>";
+      if (b.k === "R" && b.t.trim() === "또는") return '<p class="mass-or">또는</p>';
       if (b.k === "R") return '<p class="mass-rubric' + (b.foot ? " foot" : "") + '">' + escapeHtml(b.t) + "</p>";
       if (b.k === "T") return ordoTextHtml(b.t);
       return "";
@@ -2236,7 +2240,9 @@
       return '<nav class="mode-tabs ui-font" aria-label="보기 전환">' + p + m + "</nav>";
     }
 
-    function rubricsHidden() { try { return localStorage.getItem("jp-hide-rubrics") === "1"; } catch (e) { return false; } }
+    // 지시문은 페이지를 열 때마다 기본으로 켜짐(보임). 끈 상태는 그 페이지를 보는 동안만 유지
+    var RUBRICS_HIDDEN = false;
+    function rubricsHidden() { return RUBRICS_HIDDEN; }
     function applyRubricToggle() {
       var hide = rubricsHidden();
       document.documentElement.classList.toggle("hide-rubrics", hide);
@@ -2250,7 +2256,7 @@
     document.addEventListener("click", function (e) {
       var b = e.target && e.target.closest ? e.target.closest("#rubric-toggle") : null;
       if (!b) return;
-      try { localStorage.setItem("jp-hide-rubrics", rubricsHidden() ? "0" : "1"); } catch (err) {}
+      RUBRICS_HIDDEN = !RUBRICS_HIDDEN;
       applyRubricToggle();
     });
 
@@ -2396,6 +2402,7 @@
         document.getElementById("book").innerHTML = listHtml();
         title = "전체 목록 — 예수회 고유미사";
       } else if (state.view === "mass") {
+        if (opts.push || opts.scroll) RUBRICS_HIDDEN = false;
         var mp = ORDO ? getMassPage(state.date) : null;
         if (mp) {
           document.getElementById("book").innerHTML = mp.body;
