@@ -1003,6 +1003,16 @@
 
     /* "또는"은 지시문이 아니라 선택을 알려 주는 말이라 늘 보이게 */
     p.mass-or { margin: 0.5em 0; color: var(--rubric); font-size: 0.8em; font-weight: 600; }
+
+    /* 신심 미사 그림: 가장자리만 은은하게 흐리게 (빛 번짐 없이, 네모 그대로) */
+    html.votive-view .saint-figure img {
+      -webkit-mask-image: linear-gradient(to right, transparent 0, #000 7%, #000 93%, transparent 100%),
+                          linear-gradient(to bottom, transparent 0, #000 7%, #000 93%, transparent 100%);
+      -webkit-mask-composite: source-in;
+              mask-image: linear-gradient(to right, transparent 0, #000 7%, #000 93%, transparent 100%),
+                          linear-gradient(to bottom, transparent 0, #000 7%, #000 93%, transparent 100%);
+              mask-composite: intersect;
+    }
   </style>
 
   <script>
@@ -1656,7 +1666,7 @@
 
       document.addEventListener("touchstart", function (e) {
         active = false; locked = null; dx = 0;
-        if (!currentState || currentState.view !== "day") return;
+        if (!currentState || !(currentState.view === "day" || (currentState.view === "mass" && !/^v\d$/.test(String(currentState.date))))) return;
         if (e.touches.length !== 1 || document.documentElement.classList.contains("lightbox-open")) return;
         var t = e.touches[0], w = window.innerWidth;
         if (t.clientX < EDGE || t.clientX > w - EDGE) return;
@@ -2300,13 +2310,15 @@
     });
 
     // 제목 날짜 양옆의 ‹ › 버튼 (이전/다음 고유미사)
-    function addDateArrows(prev, next) {
+    function addDateArrows(prev, next, mode) {
       var d = document.querySelector("#book .h1-date");
       if (!d) return;
+      var attr = (mode === "mass") ? "data-mass" : "data-date";
+      var q = (mode === "mass") ? "?mass=" : "?date=";
       function arrow(info, dir) {
         if (!info) return '<span class="date-arrow ' + dir + ' disabled" aria-hidden="true"></span>';
         var word = (dir === "prev") ? "이전" : "다음";
-        return '<a class="date-arrow ' + dir + '" data-date="' + info.date + '" href="?date=' + info.date + '"' +
+        return '<a class="date-arrow ' + dir + '" ' + attr + '="' + info.date + '" href="' + q + info.date + '"' +
                ' title="' + word + ": " + escapeHtml(info.label + " " + (info.name || "")) + '"' +
                ' aria-label="' + word + ": " + escapeHtml(info.label) + '">' + (dir === "prev" ? "‹" : "›") + "</a>";
       }
@@ -2450,6 +2462,11 @@
           enhanceProprium(mp.votive ? null : state.date);
           state.imgKey = mp.imgKey || "";
           document.documentElement.classList.toggle("votive-view", !!mp.votive);
+          if (!mp.votive) {
+            // 날짜 양옆 ‹ › : 이전·다음 날의 '미사 전체'로
+            var pd = getPrevDate(state.date, DATA.dates), nd = getNextDate(state.date, DATA.dates);
+            addDateArrows(pd && pd !== state.date ? buildNavInfo(pd) : null, nd && nd !== state.date ? buildNavInfo(nd) : null, "mass");
+          }
           if (mp.imgKey) showSaintImage(mp.imgKey, mp.name);
         } else {
           document.getElementById("book").innerHTML = '<div class="status ui-font">미사 통상문을 불러오는 중…</div>';
