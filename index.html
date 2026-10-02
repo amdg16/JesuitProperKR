@@ -1021,6 +1021,19 @@
 
     /* 전체 목록: 방금 보던 항목 (다가오는 것보다 한 단계 옅게) */
     .entry.is-from { background: rgba(110,46,50,0.035); border-radius: 4px; box-shadow: inset 2px 0 0 #c9b8b0; }
+
+    /* 독서 선택 탭 */
+    .choice { margin: 1.4em 0 0.4em; }
+    .choice-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 0.2em; }
+    .choice-tab {
+      padding: 3px 11px; border: 1px solid var(--line); border-radius: 4px;
+      background: rgba(255,255,255,0.6); color: var(--muted); font-size: 13px; cursor: pointer;
+    }
+    .choice-tab.active { border-color: var(--accent-light); color: var(--accent); font-weight: 600; }
+    .choice-body > h2:first-child { margin-top: 0.9em; }
+    .proper-slot .choice, .choice .proper-slot { margin-top: 0.5em; }
+    /* 축성 기도의 주님 말씀 */
+    p.consecration { margin: 1.2em 0 1.3em; text-align: center; font-weight: 700; line-height: 1.8; }
   </style>
 
   <script>
@@ -1536,14 +1549,143 @@
         html += formatParagraphsForLiturgy("설명", splitLines(descRow.content));
       }
 
-      html += renderItemRows(rows);
+      html += renderItemRows(rows, { season: isEasterSeason(mmdd) ? "easter" : "other" });
 
       html += '<div class="end-mark" aria-hidden="true">✠</div>';
       return { title: displayTitle, body: html };
     }
 
     // 입당송·본기도·독서 등 항목들을 차례로 그리기 (고유미사·공통·신심 미사 공용)
-    function renderItemRows(rows) {
+    // ─── 독서 선택(부활 시기 / 아닐 때, 복음 '또는', 신심 미사 독서 묶음) ───
+    function easterDate(y) {
+      var a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4;
+      var f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+      var h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4;
+      var l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+      var mo = Math.floor((h + l - 7 * m + 114) / 31), da = ((h + l - 7 * m + 114) % 31) + 1;
+      return new Date(y, mo - 1, da);
+    }
+    // 그 날짜가 다음에 돌아오는 해에 부활 시기(부활 대축일 ~ 성령 강림 대축일)에 드는지
+    function isEasterSeason(mmdd) {
+      if (!/^\d{4}$/.test(String(mmdd || ""))) return false;
+      var y = Number(new Intl.DateTimeFormat("en-US", { timeZone: TIMEZONE, year: "numeric" }).format(new Date()));
+      if (mmdd < todayMMDD()) y += 1;
+      var dt = new Date(y, Number(mmdd.slice(0, 2)) - 1, Number(mmdd.slice(2)));
+      var e = easterDate(y), p = new Date(e.getTime()); p.setDate(p.getDate() + 49);
+      return dt >= e && dt <= p;
+    }
+
+    var READING_RE = /^(제1독서|제2독서|화답송|복음 환호송|복음)$/;
+    var SEASON_RE = /\(\s*부활\s*시기\s*\)/;
+
+    function choiceHtml(group, opts, active) {
+      if (!opts.some(function (o) { return o.key === active; })) active = opts[0].key;
+      var h = '<div class="choice" data-group="' + group + '"><div class="choice-tabs ui-font" role="tablist">';
+      opts.forEach(function (o) {
+        h += '<button type="button" class="choice-tab' + (o.key === active ? " active" : "") + '" data-opt="' + o.key + '">' + escapeHtml(o.label) + "</button>";
+      });
+      h += "</div>";
+      opts.forEach(function (o) {
+        h += '<div class="choice-body" data-opt="' + o.key + '"' + (o.key === active ? "" : " hidden") + ">" + o.html + "</div>";
+      });
+      return h + "</div>";
+    }
+
+    // 한 칸 안에 "부활 시기 / 부활 시기 아닌 때"가 함께 든 경우 나누기 (예: 5월 24일 제1독서)
+    function splitSeasonContent(content) {
+      var ps = String(content || "").split(/\n\s*\n/);
+      var ia = -1, ib = -1;
+      ps.forEach(function (p, i) { var t = p.trim(); if (t === "부활 시기") ia = i; else if (t === "부활 시기 아닌 때") ib = i; });
+      if (ia < 0 || ib < 0) return null;
+      var a = ps.slice(ia + 1, ib).join("\n\n"), b = ps.slice(ib + 1).join("\n\n");
+      return ia < ib ? { easter: a, other: b } : null;
+    }
+    // 복음 안의 "또는"으로 이어진 두 본문 나누기 (예: 3월 19일)
+    function splitAltContent(content) {
+      var ps = String(content || "").split(/\n\s*\n/);
+      var parts = [[]];
+      ps.forEach(function (p) { if (p.trim() === "또는") parts.push([]); else parts[parts.length - 1].push(p); });
+      if (parts.length < 2) return null;
+      return parts.map(function (x) { return x.join("\n\n"); });
+    }
+    function evangelistOf(content) {
+      var m = String(content || "").match(/✠\s*(\S+?)(가|이) 전한/);
+      return m ? { name: m[1], josa: m[2] } : null;
+    }
+
+    // rows를 [일반 항목 | 선택 묶음] 순서로 정리
+    function buildChoiceSequence(rows, ctx) {
+      var out = [];
+      var isRead = function (r) { return READING_RE.test(baseItemName(r.item)); };
+      var hasSeason = rows.some(function (r) { return isRead(r) && SEASON_RE.test(r.item); }) &&
+                      rows.some(function (r) { return isRead(r) && !SEASON_RE.test(r.item); });
+      if (hasSeason) {
+        var placed = false, easter = [], other = [];
+        rows.forEach(function (r) {
+          if (!isRead(r)) return;
+          (SEASON_RE.test(r.item) ? easter : other).push({ item: r.item.replace(SEASON_RE, "").trim(), content: r.content });
+        });
+        rows.forEach(function (r) {
+          if (isRead(r)) {
+            if (!placed) { placed = true; out.push({ choice: true, group: "season", active: ctx.season || "easter",
+              opts: [{ key: "easter", label: "부활 시기", rows: easter }, { key: "other", label: "부활 시기가 아닐 때", rows: other }] }); }
+            return;
+          }
+          out.push({ row: r });
+        });
+        return out;
+      }
+      if (ctx.votive && rows.some(function (r) { return r.item === "구분" && /^독서 \d$/.test(r.content); })) {
+        var sets = [], cur = null, done = false, placedV = false;
+        rows.forEach(function (r) {
+          if (!done && r.item === "구분" && /^독서 \d$/.test(r.content)) {
+            cur = { key: r.content.replace(/\D/g, ""), label: r.content, rows: [] }; sets.push(cur);
+            if (!placedV) { placedV = true; out.push({ setsHolder: true }); }
+            return;
+          }
+          if (cur && !done && (isRead(r) || r.item === "안내")) { cur.rows.push(r); return; }
+          if (cur) done = true;
+          out.push({ row: r });
+        });
+        out = out.map(function (x) { return x.setsHolder ? { choice: true, group: "vset", active: sets[0].key, opts: sets } : x; });
+        return out;
+      }
+      rows.forEach(function (r) {
+        var base = baseItemName(r.item);
+        if (base === "제1독서" && /^부활 시기\s*\n/.test(String(r.content || ""))) {
+          var sp = splitSeasonContent(r.content);
+          if (sp) { out.push({ choice: true, group: "season", active: ctx.season || "easter",
+            opts: [{ key: "easter", label: "부활 시기", rows: [{ item: r.item, content: sp.easter }] },
+                   { key: "other", label: "부활 시기가 아닐 때", rows: [{ item: r.item, content: sp.other }] }] }); return; }
+        }
+        if (base === "복음") {
+          var alts = splitAltContent(r.content);
+          if (alts) {
+            out.push({ choice: true, group: "gospel", active: "0", opts: alts.map(function (c, i) {
+              var ev = evangelistOf(c);
+              return { key: String(i), label: ev ? ev.name + " 복음" : "복음 " + (i + 1), rows: [{ item: r.item, content: c }] };
+            }) }); return;
+          }
+        }
+        out.push({ row: r });
+      });
+      return out;
+    }
+
+    function renderItemRows(rows, ctx) {
+      ctx = ctx || {};
+      var html = "";
+      buildChoiceSequence(rows, ctx).forEach(function (x) {
+        if (x.choice) {
+          html += choiceHtml(x.group, x.opts.map(function (o) { return { key: o.key, label: o.label, html: renderItemRowsPlain(o.rows) }; }), x.active);
+        } else {
+          html += renderItemRowsPlain([x.row]);
+        }
+      });
+      return html;
+    }
+
+    function renderItemRowsPlain(rows) {
       var html = "";
       rows.filter(function (r) {
         if (r.item === "설명") return false;
@@ -1600,7 +1742,7 @@
         '<div class="title-rule" aria-hidden="true"><span>✠</span></div>';
       var imgKey = (state.view === "votive") ? (VOTIVE_IMAGE[block.no] || "") : "";
       if (imgKey) html += '<figure class="saint-figure" id="saint-figure" hidden></figure>';
-      html += renderItemRows(block.rows);
+      html += renderItemRows(block.rows, { votive: state.view === "votive" });
       html += '<div class="end-mark" aria-hidden="true">✠</div>';
       return { title: block.name + " — 예수회 고유미사", body: html, imgKey: imgKey, name: block.name };
     }
@@ -1677,7 +1819,7 @@
 
       document.addEventListener("touchstart", function (e) {
         active = false; locked = null; dx = 0;
-        if (!currentState || !(currentState.view === "day" || (currentState.view === "mass" && !/^v\d$/.test(String(currentState.date))))) return;
+        if (!currentState || !/^(day|mass|votive|common)$/.test(currentState.view)) return;
         if (e.touches.length !== 1 || document.documentElement.classList.contains("lightbox-open")) return;
         var t = e.touches[0], w = window.innerWidth;
         if (t.clientX < EDGE || t.clientX > w - EDGE) return;
@@ -2050,6 +2192,22 @@
       }
     }
 
+    // 선택 탭: 같은 묶음(data-group)은 페이지 전체에서 함께 바뀜
+    document.addEventListener("click", function (e) {
+      var tab = e.target && e.target.closest ? e.target.closest(".choice-tab") : null;
+      if (!tab) return;
+      var box = tab.closest(".choice"), g = box.getAttribute("data-group"), k = tab.getAttribute("data-opt");
+      [].forEach.call(document.querySelectorAll('.choice[data-group="' + g + '"]'), function (c) {
+        [].forEach.call(c.children, function (ch) {
+          if (ch.classList.contains("choice-tabs")) {
+            [].forEach.call(ch.children, function (b) { b.classList.toggle("active", b.getAttribute("data-opt") === k); });
+          } else if (ch.classList.contains("choice-body")) {
+            ch.hidden = ch.getAttribute("data-opt") !== k;
+          }
+        });
+      });
+    });
+
     document.addEventListener("click", function (e) {
       var t = e.target && e.target.closest ? e.target : null;
       if (!t) return;
@@ -2089,7 +2247,7 @@
     // 통상문과 함께 보기 (?mass=MMDD): 미사 통상문 사이에 그날의 고유 부분을 끼워 넣은 페이지
     // 통상문 본문은 ordinary.json (『예수회 고유 미사』 2024 미사 통상문에서 추출)
     // ─────────────────────────────────────────────
-    var ORDO = null, ORDO_LOADING = null;
+    var ORDO = null, ORDO_LOADING = null, MASS_SEASON = "other";
     function loadOrdo() {
       if (ORDO) return Promise.resolve(ORDO);
       if (!ORDO_LOADING) {
@@ -2201,12 +2359,31 @@
           }).join("\n").replace(/\n{3,}/g, "\n\n").trim() };
         });
       }
-      // 신심 미사의 독서 묶음(독서 1, 독서 2)은 탭으로
+      // 신심 미사의 독서 묶음(독서 1, 독서 2): 한 번 고르면 모든 독서가 함께 바뀜
       if (mine.length > 1 && mine.every(function (r) { return /\(독서 \d\)$/.test(r.item); })) {
-        return tabsBlockHtml(mine.map(function (r) {
-          var set = r.item.match(/\((독서 \d)\)$/)[1];
-          return { tab: set, html: properCardHtml({ item: baseItemName(r.item), content: r.content }, slot) };
-        }));
+        return choiceHtml("vset", mine.map(function (r) {
+          var set = r.item.match(/\((독서 (\d))\)$/);
+          return { key: set[2], label: set[1], html: properCardHtml({ item: baseItemName(r.item), content: r.content }, slot) };
+        }), "1");
+      }
+      // 부활 시기 / 아닐 때 묶음
+      var se = mine.filter(function (r) { return SEASON_RE.test(r.item); }), so = mine.filter(function (r) { return !SEASON_RE.test(r.item); });
+      if (se.length && so.length) {
+        var mkc = function (list) { return list.map(function (r) { return properCardHtml({ item: r.item.replace(SEASON_RE, "").trim(), content: r.content }, slot); }).join(""); };
+        return choiceHtml("season", [{ key: "easter", label: "부활 시기", html: mkc(se) }, { key: "other", label: "부활 시기가 아닐 때", html: mkc(so) }], MASS_SEASON);
+      }
+      if (mine.length === 1 && slot === "제1독서" && /^부활 시기\s*\n/.test(String(mine[0].content || ""))) {
+        var sp1 = splitSeasonContent(mine[0].content);
+        if (sp1) return choiceHtml("season", [
+          { key: "easter", label: "부활 시기", html: properCardHtml({ item: mine[0].item, content: sp1.easter }, slot) },
+          { key: "other", label: "부활 시기가 아닐 때", html: properCardHtml({ item: mine[0].item, content: sp1.other }, slot) }], MASS_SEASON);
+      }
+      if (mine.length === 1 && slot === "복음") {
+        var alts1 = splitAltContent(mine[0].content);
+        if (alts1) return choiceHtml("gospel", alts1.map(function (c, i) {
+          var ev = evangelistOf(c);
+          return { key: String(i), label: ev ? ev.name + " 복음" : "복음 " + (i + 1), html: properCardHtml({ item: mine[0].item, content: c }, slot) };
+        }), "0");
       }
       return mine.map(function (r) { return properCardHtml(r, mine.length > 1 ? r.item : slot); }).join("");
     }
@@ -2216,6 +2393,12 @@
       var h = "", buf = [];
       function flush() { if (buf.length) { h += ordoTextHtml(buf.join("\n")); buf = []; } }
       list.forEach(function (b) {
+        if (b.k === "T" && /^너희는 모두 이것을 받아/.test(b.t)) {
+          // 축성 기도의 주님 말씀: 가운데 정렬 + 굵게
+          flush();
+          h += '<p class="consecration">' + b.t.split("\n").map(escapeHtml).join("<br>") + "</p>";
+          return;
+        }
         if (b.k === "T") { buf.push(b.t); return; }
         flush();
         if (b.k === "SLOT") { h += slotFn ? slotFn(b) : ""; return; }
@@ -2260,6 +2443,14 @@
       }
       if (!rows.length) return null;
       var has = function (base) { return rows.some(function (r) { return baseItemName(r.item) === base; }); };
+      MASS_SEASON = (!votive && isEasterSeason(mmdd)) ? "easter" : "other";
+      // 복음사가가 하나로 정해지면 "( )가(이)" 자리에 채움
+      var evs = [];
+      rows.forEach(function (r) {
+        if (baseItemName(r.item) !== "복음" || !r.content) return;
+        String(r.content).split(/\n/).forEach(function (l) { var ev = evangelistOf(l); if (ev && !evs.some(function (x) { return x.name === ev.name; })) evs.push(ev); });
+      });
+      var oneEv = evs.length === 1 ? evs[0] : null;
       var cond = { gloria: has("대영광송"), creed: has("신경"), reading2: rows.some(function (r) { return r.content && baseItemName(r.item) === "제2독서"; }) };
 
       var rankLabel = escapeHtml(String(info.rank || "").replace(/\[/g, "(").replace(/\]/g, ")"));
@@ -2279,6 +2470,10 @@
         if (b.k === "IF") { if (skip || !cond[b.c]) skip++; return; }
         if (b.k === "ENDIF") { if (skip) skip--; return; }
         if (skip) return;
+        if (b.k === "T" && oneEv && b.t.indexOf("( )가(이) 전한") > -1) {
+          list.push({ k: "T", t: b.t.replace("( )가(이) 전한", oneEv.name + oneEv.josa + " 전한") });
+          return;
+        }
         list.push(b);
       });
       html += renderOrdoList(list, function (b) { return massSlotHtml(b.s, rows, mmdd); });
@@ -2329,6 +2524,33 @@
     });
 
     // 제목 날짜 양옆의 ‹ › 버튼 (이전/다음 고유미사)
+    // 신심 미사·공통 페이지의 ‹ › (처음과 끝에서는 멈춤)
+    function addLinkArrows(prev, next) {
+      var d = document.querySelector("#book .h1-date");
+      if (!d) return;
+      function arrow(o, dir) {
+        if (!o) return '<span class="date-arrow ' + dir + ' disabled" aria-hidden="true"></span>';
+        return '<a class="date-arrow ' + dir + '" ' + o.attr + '="' + escapeHtml(o.val) + '" href="' + o.href + '"' +
+               ' title="' + escapeHtml(o.title) + '" aria-label="' + escapeHtml(o.title) + '">' + (dir === "prev" ? "‹" : "›") + "</a>";
+      }
+      d.innerHTML = arrow(prev, "prev") + '<span class="h1-date-text">' + d.innerHTML + "</span>" + arrow(next, "next");
+    }
+    function specialNeighbors(kind, key, asMass) {
+      var ex = (DATA && DATA.extra) || {};
+      var list = [];
+      if (kind === "votive") (ex.votiveOrder || []).forEach(function (n) { var v = ex.votives[n]; list.push({ key: v.no || n, title: "신심 미사 " + (v.no || "") + " " + n }); });
+      else (ex.commonOrder || []).forEach(function (n) { list.push({ key: n, title: n }); });
+      var i = -1;
+      list.forEach(function (x, j) { if (String(x.key) === String(key)) i = j; });
+      function mk(x) {
+        if (!x) return null;
+        if (kind === "votive" && asMass) return { attr: "data-mass", val: "v" + x.key, href: "?mass=v" + x.key, title: x.title };
+        if (kind === "votive") return { attr: "data-votive", val: x.key, href: "?votive=" + encodeURIComponent(x.key), title: x.title };
+        return { attr: "data-common", val: x.key, href: "?common=" + encodeURIComponent(x.key), title: x.title };
+      }
+      return { prev: i > 0 ? mk(list[i - 1]) : null, next: (i >= 0 && i < list.length - 1) ? mk(list[i + 1]) : null };
+    }
+
     function addDateArrows(prev, next, mode) {
       var d = document.querySelector("#book .h1-date");
       if (!d) return;
@@ -2483,6 +2705,10 @@
           enhanceProprium(mp.votive ? null : state.date);
           state.imgKey = mp.imgKey || "";
           document.documentElement.classList.toggle("votive-view", !!mp.votive);
+          if (mp.votive) {
+            var nbv = specialNeighbors("votive", String(state.date).slice(1), true);
+            addLinkArrows(nbv.prev, nbv.next);
+          }
           if (!mp.votive) {
             // 날짜 양옆 ‹ › : 이전·다음 날의 '미사 전체'로
             var pd = getPrevDate(state.date, DATA.dates), nd = getNextDate(state.date, DATA.dates);
@@ -2504,6 +2730,8 @@
         if (sp) {
           title = sp.title;
           state.imgKey = sp.imgKey || "";
+          var nb = specialNeighbors(state.view === "votive" ? "votive" : "common", state.key, false);
+          addLinkArrows(nb.prev, nb.next);
           enhanceProprium(null);
           if (sp.imgKey) showSaintImage(sp.imgKey, sp.name);
         }
