@@ -1018,6 +1018,9 @@
     .mode-tabs { gap: 14px; }
     .mode-tab { display: inline-flex; justify-content: center; align-items: flex-end; width: 6.4em; }
     .mode-tab .t-small { font-size: 0.82em; }
+
+    /* 전체 목록: 방금 보던 항목 (다가오는 것보다 한 단계 옅게) */
+    .entry.is-from { background: rgba(110,46,50,0.035); border-radius: 4px; box-shadow: inset 2px 0 0 #c9b8b0; }
   </style>
 
   <script>
@@ -1550,7 +1553,10 @@
       }).forEach(function (r) {
         if (r.item === "큰구분") { html += '<h2 class="part-heading ui-font">' + escapeHtml(r.content) + "</h2>"; return; }
         if (r.item === "구분") { html += '<h3 class="set-heading ui-font">' + escapeHtml(r.content) + "</h3>"; return; }
-        if (r.item === "안내") { html += '<p class="rubric">' + escapeHtml(r.content) + "</p>"; return; }
+        if (r.item === "안내") {
+          if (/^이 미사에서는 흰색 제의를 입는다\.?$/.test(r.content.trim())) return;  // 제목의 [백]과 같은 내용이라 생략
+          html += '<p class="rubric">' + escapeHtml(r.content) + "</p>"; return;
+        }
         if (r.item === "일러두기") {
           html += '<p class="notes-line ui-font" data-notes="' + escapeHtml(r.content) + '">일러두기</p>';
           return;
@@ -2361,6 +2367,7 @@
       return html + "</div></div>";
     }
 
+    var LIST_FROM = null;
     function listHtml() {
       var today = todayMMDD();
       var upcoming = getDefaultDate(today, DATA.dates);
@@ -2394,7 +2401,7 @@
           ? '<span class="entry-more ui-font">외 ' + (parts.length - 1) + "</span>"
           : "";
 
-        html += '<a class="entry' + (date === today ? " is-today" : "") + (date === upcoming ? " is-upcoming" : "") +
+        html += '<a class="entry' + (date === today ? " is-today" : "") + (date === upcoming ? " is-upcoming" : "") + (LIST_FROM === "d:" + date && date !== upcoming && date !== today ? " is-from" : "") +
           '" data-date="' + date + '" href="?date=' + date + '" title="' + escapeHtml(info.title) + '">' +
           '<span class="entry-date ui-font">' + escapeHtml(formatMonthDay(date)) + "</span>" +
           '<span class="entry-title">' + vestmentBadge(info.color) + escapeHtml(shortTitle) + more + tag + "</span>" +
@@ -2404,22 +2411,22 @@
       if (openMonth) html += "</div>";
 
       var ex = DATA.extra || {};
-      if (ex.commonOrder && ex.commonOrder.length) {
-        html += '<div class="month extra-list"><h2 class="month-name">예수회 공통</h2>';
-        ex.commonOrder.forEach(function (name) {
-          html += '<a class="entry" data-common="' + escapeHtml(name) + '" href="?common=' + encodeURIComponent(name) + '">' +
-            '<span class="entry-date ui-font">공통</span><span class="entry-title">' + escapeHtml(name) + " 기도문 · 독서</span></a>";
-        });
-        html += "</div>";
-      }
       if (ex.votiveOrder && ex.votiveOrder.length) {
         html += '<div class="month extra-list"><h2 class="month-name">예수회 신심 미사</h2>';
         ex.votiveOrder.forEach(function (name) {
           var v = ex.votives[name];
           var vkey = v.no || name;
-          html += '<a class="entry" data-votive="' + escapeHtml(vkey) + '" href="?votive=' + encodeURIComponent(vkey) + '">' +
+          html += '<a class="entry' + (LIST_FROM === "v:" + vkey ? " is-from" : "") + '" data-votive="' + escapeHtml(vkey) + '" href="?votive=' + encodeURIComponent(vkey) + '">' +
             '<span class="entry-date ui-font">신심 ' + escapeHtml(v.no || "") + "</span>" +
             '<span class="entry-title">' + vestmentBadge(v.color) + escapeHtml(name) + "</span></a>";
+        });
+        html += "</div>";
+      }
+      if (ex.commonOrder && ex.commonOrder.length) {
+        html += '<div class="month extra-list"><h2 class="month-name">예수회 공통</h2>';
+        ex.commonOrder.forEach(function (name) {
+          html += '<a class="entry' + (LIST_FROM === "c:" + name ? " is-from" : "") + '" data-common="' + escapeHtml(name) + '" href="?common=' + encodeURIComponent(name) + '">' +
+            '<span class="entry-date ui-font">공통</span><span class="entry-title">' + escapeHtml(name) + " 기도문 · 독서</span></a>";
         });
         html += "</div>";
       }
@@ -2463,6 +2470,7 @@
 
       document.documentElement.classList.toggle("votive-view", state.view === "votive");
       if (state.view === "list") {
+        LIST_FROM = state.from || null;
         document.getElementById("book").innerHTML = listHtml();
         title = "전체 목록 — 예수회 고유미사";
       } else if (state.view === "mass") {
@@ -2530,7 +2538,13 @@
         } catch (e) {}
       }
       if (opts.scroll) {
-        if (state.view === "list" && !opts.top) scrollToUpcomingMonth();
+        if (state.view === "list" && !opts.top) {
+          var fromEl = document.querySelector("#book .entry.is-from");
+          if (fromEl) {
+            var y = fromEl.getBoundingClientRect().top + (window.pageYOffset || 0) - window.innerHeight * 0.3;
+            window.scrollTo(0, Math.max(0, y));
+          } else scrollToUpcomingMonth();
+        }
         else window.scrollTo(0, 0);
       }
     }
@@ -2575,7 +2589,14 @@
       } else if (a.hasAttribute("data-votive")) {
         render({ view: "votive", key: a.getAttribute("data-votive") }, { push: true, scroll: true });
       } else if (a.hasAttribute("data-view")) {
-        render({ view: a.getAttribute("data-view") }, { push: true, scroll: true, top: a.hasAttribute("data-top") });
+        var fromKey = null;
+        if (!a.hasAttribute("data-top") && currentState) {
+          if ((currentState.view === "day" || currentState.view === "mass") && !/^v\d$/.test(String(currentState.date))) fromKey = "d:" + currentState.date;
+          else if (currentState.view === "mass") fromKey = "v:" + String(currentState.date).slice(1);
+          else if (currentState.view === "votive") fromKey = "v:" + currentState.key;
+          else if (currentState.view === "common") fromKey = "c:" + currentState.key;
+        }
+        render({ view: a.getAttribute("data-view"), from: fromKey }, { push: true, scroll: true, top: a.hasAttribute("data-top") });
       } else {
         render({ view: "day", date: a.getAttribute("data-date") }, { push: true, scroll: true });
       }
