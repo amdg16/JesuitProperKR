@@ -1034,6 +1034,15 @@
     .proper-slot .choice, .choice .proper-slot { margin-top: 0.5em; }
     /* 축성 기도의 주님 말씀 */
     p.consecration { margin: 1.2em 0 1.3em; text-align: center; font-weight: 700; line-height: 1.8; }
+
+    /* 맨 위로 버튼: 아래 가운데 */
+    .to-top { left: 50% !important; right: auto !important; transform: translate(-50%, 8px); }
+    .to-top.show { transform: translate(-50%, 0); }
+    /* 끝에서 비어 있는 이전/다음 카드 자리 */
+    .nav-card.is-empty { visibility: hidden; }
+
+    /* 맨 아래: 이전/다음 카드와 IHS 사이에 맨 위로 버튼이 들어갈 자리 */
+    .footer { margin-top: 70px !important; }
   </style>
 
   <script>
@@ -1869,8 +1878,17 @@
       var ticking = false;
       function update() {
         btn.classList.toggle("show", (window.pageYOffset || 0) > 700);
+        // 맨 아래에서는 IHS 아이콘 바로 위에 멈추기
+        var mark = document.querySelector(".footer-mark");
+        var base = 18, lift = 0;
+        if (mark) {
+          var r = mark.getBoundingClientRect();
+          lift = window.innerHeight - r.top + 10;
+        }
+        btn.style.bottom = (lift > base) ? "calc(" + lift + "px)" : "";
         ticking = false;
       }
+      window.addEventListener("resize", update, { passive: true });
       window.addEventListener("scroll", function () {
         if (!ticking) { ticking = true; window.requestAnimationFrame(update); }
       }, { passive: true });
@@ -1884,6 +1902,17 @@
     });
 
     var ORNAMENT_SRC = "img/frontispiece.png";
+
+    // 신심 미사·공통·통상문 페이지용 이전/다음 카드 (o: {attr, val, href, label, name})
+    function navCardLinkHtml(o, dir) {
+      var cls = "nav-card " + dir;
+      var dirLabel = (dir === "prev") ? "← 이전" : "다음 →";
+      if (!o) return '<span class="' + cls + ' disabled is-empty" aria-hidden="true"></span>';
+      return '<a class="' + cls + '" ' + o.attr + '="' + escapeHtml(o.val) + '" href="' + o.href + '">' +
+             '<span class="nav-dir">' + dirLabel + "</span>" +
+             '<span class="nav-date">' + escapeHtml(o.label) + "</span>" +
+             (o.name ? '<span class="nav-name">(' + escapeHtml(o.name) + ")</span>" : "") + "</a>";
+    }
 
     function navCardHtml(info, dir) {
       var cls = "nav-card " + dir;
@@ -2538,15 +2567,15 @@
     function specialNeighbors(kind, key, asMass) {
       var ex = (DATA && DATA.extra) || {};
       var list = [];
-      if (kind === "votive") (ex.votiveOrder || []).forEach(function (n) { var v = ex.votives[n]; list.push({ key: v.no || n, title: "신심 미사 " + (v.no || "") + " " + n }); });
-      else (ex.commonOrder || []).forEach(function (n) { list.push({ key: n, title: n }); });
+      if (kind === "votive") (ex.votiveOrder || []).forEach(function (n) { var v = ex.votives[n]; list.push({ key: v.no || n, title: "신심 미사 " + (v.no || "") + " " + n, label: "신심 미사 " + (v.no || ""), name: n }); });
+      else (ex.commonOrder || []).forEach(function (n) { list.push({ key: n, title: n, label: n, name: "" }); });
       var i = -1;
       list.forEach(function (x, j) { if (String(x.key) === String(key)) i = j; });
       function mk(x) {
         if (!x) return null;
-        if (kind === "votive" && asMass) return { attr: "data-mass", val: "v" + x.key, href: "?mass=v" + x.key, title: x.title };
-        if (kind === "votive") return { attr: "data-votive", val: x.key, href: "?votive=" + encodeURIComponent(x.key), title: x.title };
-        return { attr: "data-common", val: x.key, href: "?common=" + encodeURIComponent(x.key), title: x.title };
+        if (kind === "votive" && asMass) return { attr: "data-mass", val: "v" + x.key, href: "?mass=v" + x.key, title: x.title, label: x.label, name: x.name };
+        if (kind === "votive") return { attr: "data-votive", val: x.key, href: "?votive=" + encodeURIComponent(x.key), title: x.title, label: x.label, name: x.name };
+        return { attr: "data-common", val: x.key, href: "?common=" + encodeURIComponent(x.key), title: x.title, label: x.label, name: x.name };
       }
       return { prev: i > 0 ? mk(list[i - 1]) : null, next: (i >= 0 && i < list.length - 1) ? mk(list[i + 1]) : null };
     }
@@ -2708,11 +2737,15 @@
           if (mp.votive) {
             var nbv = specialNeighbors("votive", String(state.date).slice(1), true);
             addLinkArrows(nbv.prev, nbv.next);
+            navHtml = navCardLinkHtml(nbv.prev, "prev") + navCardLinkHtml(nbv.next, "next");
           }
           if (!mp.votive) {
             // 날짜 양옆 ‹ › : 이전·다음 날의 '미사 전체'로
             var pd = getPrevDate(state.date, DATA.dates), nd = getNextDate(state.date, DATA.dates);
-            addDateArrows(pd && pd !== state.date ? buildNavInfo(pd) : null, nd && nd !== state.date ? buildNavInfo(nd) : null, "mass");
+            var pinfo = pd && pd !== state.date ? buildNavInfo(pd) : null, ninfo = nd && nd !== state.date ? buildNavInfo(nd) : null;
+            addDateArrows(pinfo, ninfo, "mass");
+            var toMass = function (i) { return i ? { attr: "data-mass", val: i.date, href: "?mass=" + i.date, label: i.label, name: i.name } : null; };
+            navHtml = navCardLinkHtml(toMass(pinfo), "prev") + navCardLinkHtml(toMass(ninfo), "next");
           }
           if (mp.imgKey) showSaintImage(mp.imgKey, mp.name);
         } else {
@@ -2732,6 +2765,7 @@
           state.imgKey = sp.imgKey || "";
           var nb = specialNeighbors(state.view === "votive" ? "votive" : "common", state.key, false);
           addLinkArrows(nb.prev, nb.next);
+          navHtml = navCardLinkHtml(nb.prev, "prev") + navCardLinkHtml(nb.next, "next");
           enhanceProprium(null);
           if (sp.imgKey) showSaintImage(sp.imgKey, sp.name);
         }
