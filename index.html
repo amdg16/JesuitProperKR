@@ -1013,6 +1013,11 @@
                           linear-gradient(to bottom, transparent 0, #000 7%, #000 93%, transparent 100%);
               mask-composite: intersect;
     }
+
+    /* 보기 전환 탭: 고유문 | 통상문과 함께 (두 탭 폭을 같게) */
+    .mode-tabs { gap: 14px; }
+    .mode-tab { display: inline-flex; justify-content: center; align-items: flex-end; width: 6.4em; }
+    .mode-tab .t-small { font-size: 0.82em; }
   </style>
 
   <script>
@@ -2182,6 +2187,14 @@
       }
 
       if (!mine.length) return "";
+      // 예물 기도 아래의 "○○ 감사송" 안내는 미사 전체에서는 감사송 자리에 본문이 나오므로 뺌
+      if (slot === "예물 기도") {
+        mine = mine.map(function (r) {
+          return { item: r.item, content: String(r.content || "").split("\n").filter(function (l) {
+            var t = l.trim(); return !(/감사송$/.test(t) && t.length < 40);
+          }).join("\n").replace(/\n{3,}/g, "\n\n").trim() };
+        });
+      }
       // 신심 미사의 독서 묶음(독서 1, 독서 2)은 탭으로
       if (mine.length > 1 && mine.every(function (r) { return /\(독서 \d\)$/.test(r.item); })) {
         return tabsBlockHtml(mine.map(function (r) {
@@ -2271,11 +2284,11 @@
     // 같은 날의 두 가지 보기: 고유 부분 | 미사 전체
     function modeTabsHtml(mmdd, active) {
       var p = (active === "proper")
-        ? '<span class="mode-tab active" aria-current="page">고유 부분</span>'
-        : '<a class="mode-tab" data-date="' + mmdd + '" href="?date=' + mmdd + '">고유 부분</a>';
+        ? '<span class="mode-tab active" aria-current="page">고유문</span>'
+        : '<a class="mode-tab" data-date="' + mmdd + '" href="?date=' + mmdd + '">고유문</a>';
       var m = (active === "mass")
-        ? '<span class="mode-tab active" aria-current="page">미사 전체</span>'
-        : '<a class="mode-tab" data-mass="' + mmdd + '" href="?mass=' + mmdd + '">미사 전체</a>';
+        ? '<span class="mode-tab active" aria-current="page"><span class="t-small">통상문과 함께</span></span>'
+        : '<a class="mode-tab" data-mass="' + mmdd + '" href="?mass=' + mmdd + '"><span class="t-small">통상문과 함께</span></a>';
       return '<nav class="mode-tabs ui-font" aria-label="보기 전환">' + p + m + "</nav>";
     }
 
@@ -2283,11 +2296,11 @@
     var RUBRICS_HIDDEN = false;
     function votiveTabsHtml(no, active) {
       var p = (active === "proper")
-        ? '<span class="mode-tab active" aria-current="page">고유 부분</span>'
-        : '<a class="mode-tab" data-votive="' + no + '" href="?votive=' + no + '">고유 부분</a>';
+        ? '<span class="mode-tab active" aria-current="page">고유문</span>'
+        : '<a class="mode-tab" data-votive="' + no + '" href="?votive=' + no + '">고유문</a>';
       var m = (active === "mass")
-        ? '<span class="mode-tab active" aria-current="page">미사 전체</span>'
-        : '<a class="mode-tab" data-mass="v' + no + '" href="?mass=v' + no + '">미사 전체</a>';
+        ? '<span class="mode-tab active" aria-current="page"><span class="t-small">통상문과 함께</span></span>'
+        : '<a class="mode-tab" data-mass="v' + no + '" href="?mass=v' + no + '"><span class="t-small">통상문과 함께</span></a>';
       return '<nav class="mode-tabs ui-font" aria-label="보기 전환">' + p + m + "</nav>";
     }
 
