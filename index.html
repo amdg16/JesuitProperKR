@@ -1043,6 +1043,8 @@
 
     /* 맨 아래: 이전/다음 카드와 IHS 사이에 맨 위로 버튼이 들어갈 자리 */
     .footer { margin-top: 70px !important; }
+
+    .mass-tools { margin-top: 0.4em !important; }
   </style>
 
   <script>
@@ -2452,6 +2454,17 @@
       return null;
     }
 
+    // 통상문 페이지의 윗부분을 고유문 페이지와 같게: 성인 소개(공통 기도문 참고 줄 포함) / 신심 미사는 일러두기
+    function massIntroHtml(votive, rows) {
+      if (votive) {
+        return votive.rows.filter(function (r) { return r.item === "일러두기"; })
+          .map(function (r) { return renderItemRowsPlain([r]); }).join("");
+      }
+      var d = null;
+      for (var i = 0; i < rows.length; i++) if (rows[i].item === "설명") { d = rows[i]; break; }
+      return (d && d.content) ? formatParagraphsForLiturgy("설명", splitLines(d.content)) : "";
+    }
+
     function getMassPage(mmdd) {
       if (!ORDO || !DATA) return null;
       var votive = /^v\d$/.test(String(mmdd)) ? votiveBlockByNo(String(mmdd).slice(1)) : null;
@@ -2491,6 +2504,7 @@
         (votive ? votiveTabsHtml(votive.no, "mass") : modeTabsHtml(mmdd, "mass")) +
         '<div class="title-rule" aria-hidden="true"><span>✠</span></div>' +
         '<figure class="saint-figure" id="saint-figure" hidden></figure>' +
+        massIntroHtml(votive, rows) +
         '<div class="mass-tools ui-font"><button type="button" class="mass-rubric-toggle" id="rubric-toggle"></button></div>';
 
       var skip = 0;
