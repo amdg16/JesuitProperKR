@@ -1075,6 +1075,19 @@
     .ent-st.lent { background: rgba(107,45,143,0.1); color: #6b2d8f; }
     .ent-st.move { background: rgba(110,46,50,0.08); color: var(--accent); }
     @media print { .yr-btn { display: none !important; } }
+
+    /* 보는 해: 버튼을 누르면 두 해 가운데 고르는 메뉴 */
+    .yr-wrap { position: absolute; top: 10px; right: 12px; z-index: 5; }
+    .yr-wrap .yr-btn { position: static; }
+    .yr-btn.other { background: rgba(255,255,255,0.7); border-color: #e0d6c6; color: var(--muted); }
+    .yr-menu { position: absolute; top: calc(100% + 4px); right: 0; min-width: 88px; padding: 4px; border: 1px solid var(--line);
+      border-radius: 8px; background: #fffdf8; box-shadow: 0 4px 14px rgba(50,40,25,0.14); }
+    .yr-menu[hidden] { display: none; }
+    .yr-opt { display: flex; align-items: center; gap: 6px; width: 100%; padding: 6px 10px; border: 0; border-radius: 5px;
+      background: none; color: var(--ink); font-size: 13px; text-align: left; cursor: pointer; }
+    .yr-opt:hover { background: rgba(110,46,50,0.06); }
+    .yr-opt.on { color: var(--accent); font-weight: 700; }
+    .yr-check { display: inline-block; width: 12px; color: var(--accent); }
   </style>
 
   <script>
@@ -1604,21 +1617,49 @@
       if (!book) return;
       var show = state.view === "list" || state.view === "day" || (state.view === "mass" && !/^v\d$/.test(String(state.date)));
       book.classList.toggle("with-yr", show);
-      if (!show || book.querySelector(".yr-btn")) return;
-      var y = viewYear();
+      if (!show || book.querySelector(".yr-wrap")) return;
+      var y = viewYear(), t = thisYear();
+      var opt = function (yy) {
+        return '<button type="button" class="yr-opt' + (yy === y ? " on" : "") + '" data-year="' + yy + '" role="menuitemradio" aria-checked="' + (yy === y) + '">' +
+               '<span class="yr-check" aria-hidden="true">' + (yy === y ? "✓" : "") + "</span>" + yy + "</button>";
+      };
       book.insertAdjacentHTML("afterbegin",
-        '<button type="button" class="yr-btn ui-font' + (isOtherYear() ? " other" : "") + '" title="' +
-        (isOtherYear() ? "올해(" + thisYear() + ")로 돌아가기" : "내년(" + (thisYear() + 1) + ") 보기") + '">' + y + "</button>");
+        '<div class="yr-wrap ui-font">' +
+          '<button type="button" class="yr-btn" aria-haspopup="menu" aria-expanded="false" title="보는 해 고르기">' + y + "</button>" +
+          '<div class="yr-menu" role="menu" hidden>' + opt(t) + opt(t + 1) + "</div>" +
+        "</div>");
+    }
+    function closeYearMenu() {
+      [].forEach.call(document.querySelectorAll(".yr-menu"), function (m) { m.hidden = true; });
+      [].forEach.call(document.querySelectorAll(".yr-btn"), function (b) { b.setAttribute("aria-expanded", "false"); });
     }
     document.addEventListener("click", function (e) {
-      var b = e.target && e.target.closest ? e.target.closest(".yr-btn") : null;
-      if (!b || !currentState) return;
-      var ns = {};
-      for (var k in currentState) if (Object.prototype.hasOwnProperty.call(currentState, k)) ns[k] = currentState[k];
-      ns.year = isOtherYear() ? null : thisYear() + 1;
-      if (ns.view === "list") ns.from = null;
-      render(ns, { push: true });
+      var t = e.target && e.target.closest ? e.target : null;
+      if (!t) return;
+      var btn = t.closest(".yr-btn");
+      if (btn) {
+        var menu = btn.parentNode.querySelector(".yr-menu");
+        var open = menu.hidden;
+        closeYearMenu();
+        menu.hidden = !open;
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+        return;
+      }
+      var opt = t.closest(".yr-opt");
+      if (opt && currentState) {
+        closeYearMenu();
+        var yy = Number(opt.getAttribute("data-year"));
+        if (yy === viewYear()) return;
+        var ns = {};
+        for (var k in currentState) if (Object.prototype.hasOwnProperty.call(currentState, k)) ns[k] = currentState[k];
+        ns.year = (yy === thisYear()) ? null : yy;
+        if (ns.view === "list") ns.from = null;
+        render(ns, { push: true });
+        return;
+      }
+      if (!t.closest(".yr-menu")) closeYearMenu();
     });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeYearMenu(); });
 
     function thisYear() { return Number(new Intl.DateTimeFormat("en-US", { timeZone: TIMEZONE, year: "numeric" }).format(new Date())); }
     function viewYear() { return (currentState && currentState.year) ? currentState.year : thisYear(); }
