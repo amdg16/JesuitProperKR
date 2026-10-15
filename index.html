@@ -2352,12 +2352,18 @@
                           : (sameDay(c.d, c.pent) ? "성령 강림 대축일" : (sameDay(c.d, c.asc) ? "주님 승천 대축일" : (c.easter ? "부활 시기 주일" : "주일"))));
       if (reason) {
         out.box = D + "은 " + reason + "이어서, 올해는 이 " + kind + "을 지내지 않는다. 미사는 그날" + (c.sunday ? " 주일" : "의") + " 미사를 드린다.";
-        out.fold = "all"; out.tag = ["none", "지내지 않음"];
+        out.fold = "all";
+        var short = reason;
+        if (c.holy) short = (c.d < c.E) ? "성주간" : "부활 팔일";
+        else if (reason === "성령 강림 대축일") short = "성령 강림";
+        else if (reason === "주님 승천 대축일") short = "주님 승천";
+        else if (reason === "부활 시기 주일") short = "주일";
+        out.tag = ["none", "✕ " + short];
         return out;
       }
       if (c.lent && kind === "기념일") {
         out.box = DD + "은 사순 시기 평일이다. 미사는 그날 사순 평일 미사를 드리고, 성인은 본기도로만 기억할 수 있다.";
-        out.fold = "except-collect"; out.tag = ["lent", "사순 평일 · 기억"];
+        out.fold = "except-collect"; out.tag = ["lent", "△ 사순 평일"];
         return out;
       }
       if (kind === "기념일") {
