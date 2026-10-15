@@ -1061,6 +1061,20 @@
     .optional-note { margin: 1.6em 0 0 !important; color: var(--muted); font-size: 12px; line-height: 1.55; text-align: right; }
     .optional-note + p.common-ref { margin-top: 0.3em !important; border-top: 0; padding-top: 0; }
     @media print { .fold-mark, .fold-line { display: none !important; } [data-folded] { display: block !important; } }
+
+    /* 보는 해 버튼 (오른쪽 위) */
+    .book { position: relative; }
+    .yr-btn { position: absolute; top: 10px; right: 12px; z-index: 3; padding: 2px 9px; border: 1px solid #e0d6c6; border-radius: 999px;
+      background: rgba(255,255,255,0.7); color: var(--muted); font-size: 12px; font-weight: 600; line-height: 1.5; cursor: pointer; }
+    .yr-btn::after { content: " ▾"; font-size: 9px; opacity: 0.7; }
+    .yr-btn.other { background: var(--accent); border-color: var(--accent); color: #fff; }
+    #book.with-yr .list-head { padding-top: 22px; }
+    /* 전체 목록: 그해 상태 */
+    .ent-st { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 4px; font-size: 11px; vertical-align: 0.1em; white-space: nowrap; }
+    .ent-st.none { background: #eee9e1; color: var(--muted); }
+    .ent-st.lent { background: rgba(107,45,143,0.1); color: #6b2d8f; }
+    .ent-st.move { background: rgba(110,46,50,0.08); color: var(--accent); }
+    @media print { .yr-btn { display: none !important; } }
   </style>
 
   <script>
@@ -1558,7 +1572,7 @@
       var nameParts = buildNameHtml(rawTitle, "", color);
       var html = '<h1 class="feast-title' + (nameParts.long ? " is-long" : "") + '">' +
         '<span class="h1-date">' + escapeHtml(formatMonthDay(mmdd)) +
-          (mmdd === todayMMDD() ? ' <span class="tag ui-font">오늘</span>' : "") +
+          (!isOtherYear() && mmdd === todayMMDD() ? ' <span class="tag ui-font">오늘</span>' : "") +
         "</span>" +
         nameParts.html +
         (rank ? '<span class="rank-line ui-font">' + rankLabel + "</span>" : "") +
@@ -1584,6 +1598,32 @@
 
     // 입당송·본기도·독서 등 항목들을 차례로 그리기 (고유미사·공통·신심 미사 공용)
     // ─── 독서 선택(부활 시기 / 아닐 때, 복음 '또는', 신심 미사 독서 묶음) ───
+    // ─── 보는 해: 기본은 올해, 오른쪽 위 버튼으로 내년. 한 번 고르면 이동해도 유지 ───
+    function addYearButton(state) {
+      var book = document.getElementById("book");
+      if (!book) return;
+      var show = state.view === "list" || state.view === "day" || (state.view === "mass" && !/^v\d$/.test(String(state.date)));
+      book.classList.toggle("with-yr", show);
+      if (!show || book.querySelector(".yr-btn")) return;
+      var y = viewYear();
+      book.insertAdjacentHTML("afterbegin",
+        '<button type="button" class="yr-btn ui-font' + (isOtherYear() ? " other" : "") + '" title="' +
+        (isOtherYear() ? "올해(" + thisYear() + ")로 돌아가기" : "내년(" + (thisYear() + 1) + ") 보기") + '">' + y + "</button>");
+    }
+    document.addEventListener("click", function (e) {
+      var b = e.target && e.target.closest ? e.target.closest(".yr-btn") : null;
+      if (!b || !currentState) return;
+      var ns = {};
+      for (var k in currentState) if (Object.prototype.hasOwnProperty.call(currentState, k)) ns[k] = currentState[k];
+      ns.year = isOtherYear() ? null : thisYear() + 1;
+      if (ns.view === "list") ns.from = null;
+      render(ns, { push: true });
+    });
+
+    function thisYear() { return Number(new Intl.DateTimeFormat("en-US", { timeZone: TIMEZONE, year: "numeric" }).format(new Date())); }
+    function viewYear() { return (currentState && currentState.year) ? currentState.year : thisYear(); }
+    function isOtherYear() { return viewYear() !== thisYear(); }
+
     function easterDate(y) {
       var a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4;
       var f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
@@ -1595,8 +1635,7 @@
     // 그 날짜가 다음에 돌아오는 해에 부활 시기(부활 대축일 ~ 성령 강림 대축일)에 드는지
     function isEasterSeason(mmdd) {
       if (!/^\d{4}$/.test(String(mmdd || ""))) return false;
-      var y = Number(new Intl.DateTimeFormat("en-US", { timeZone: TIMEZONE, year: "numeric" }).format(new Date()));
-      if (mmdd < todayMMDD()) y += 1;
+      var y = viewYear();
       var dt = new Date(y, Number(mmdd.slice(0, 2)) - 1, Number(mmdd.slice(2)));
       var e = easterDate(y), p = new Date(e.getTime()); p.setDate(p.getDate() + 49);
       return dt >= e && dt <= p;
@@ -2249,11 +2288,7 @@
     // 기준 해: 그 날짜가 다음에 돌아오는 해
     // ─────────────────────────────────────────────
     var DOW_KO = ["일", "월", "화", "수", "목", "금", "토"];
-    function nextYearFor(mmdd) {
-      var y = Number(new Intl.DateTimeFormat("en-US", { timeZone: TIMEZONE, year: "numeric" }).format(new Date()));
-      if (mmdd < todayMMDD()) y += 1;
-      return y;
-    }
+    function nextYearFor(mmdd) { return viewYear(); }
     function addDays(dt, n) { var x = new Date(dt.getTime()); x.setDate(x.getDate() + n); return x; }
     function sameDay(a, b) { return a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
     function fmtFull(dt) { return dt.getFullYear() + "년 " + (dt.getMonth() + 1) + "월 " + dt.getDate() + "일"; }
@@ -2293,19 +2328,19 @@
       var D = "<b>" + fmtFull(c.d) + "</b>", DD = "<b>" + fmtFullDow(c.d) + "</b>";
 
       if (mmdd === "0103") {
-        if (sameDay(c.epi, c.d)) out.box = D + "은 주님 공현 대축일(주일)이어서, 이 대축일은 <b>" + fmtMD(addDays(c.d, 1)) + "</b>로 옮겨 지낸다.";
+        if (sameDay(c.epi, c.d)) { out.box = D + "은 주님 공현 대축일(주일)이어서, 이 대축일은 <b>" + fmtMD(addDays(c.d, 1)) + "</b>로 옮겨 지낸다."; out.tag = ["move", fmtMD(addDays(c.d, 1)) + "로 옮김"]; }
         return out;
       }
       if (mmdd === "0319") {
         var to = null, why = "";
         if (c.holy && c.d < c.E) { to = addDays(c.palm, -1); why = sameDay(c.d, c.palm) ? "주님 수난 성지 주일" : "성주간"; }
         else if (c.sunday) { to = addDays(c.d, 1); why = c.lent ? lentSundayName(c) : "주일"; }
-        if (to) out.box = D + "은 " + why + "이어서, 이 대축일은 <b>" + fmtMD(to) + "</b>로 옮겨 지낸다.";
+        if (to) { out.box = D + "은 " + why + "이어서, 이 대축일은 <b>" + fmtMD(to) + "</b>로 옮겨 지낸다."; out.tag = ["move", fmtMD(to) + "로 옮김"]; }
         return out;
       }
       if (/대축일/.test(r)) return out;                 // 7월 31일 등: 항상 기념
       if (!r) {                                          // 11월 6일 (죽은 모든 예수회원)
-        if (c.sunday) out.box = D + "은 주일이어서, 이 날은 <b>" + fmtMD(addDays(c.d, 1)) + "</b>에 지낸다.";
+        if (c.sunday) { out.box = D + "은 주일이어서, 이 날은 <b>" + fmtMD(addDays(c.d, 1)) + "</b>에 지낸다."; out.tag = ["move", fmtMD(addDays(c.d, 1)) + "에 지냄"]; }
         return out;
       }
       var kind = (r === "축일") ? "축일" : "기념일";
@@ -2317,12 +2352,12 @@
                           : (sameDay(c.d, c.pent) ? "성령 강림 대축일" : (sameDay(c.d, c.asc) ? "주님 승천 대축일" : (c.easter ? "부활 시기 주일" : "주일"))));
       if (reason) {
         out.box = D + "은 " + reason + "이어서, 올해는 이 " + kind + "을 지내지 않는다. 미사는 그날" + (c.sunday ? " 주일" : "의") + " 미사를 드린다.";
-        out.fold = "all";
+        out.fold = "all"; out.tag = ["none", "지내지 않음"];
         return out;
       }
       if (c.lent && kind === "기념일") {
         out.box = DD + "은 사순 시기 평일이다. 미사는 그날 사순 평일 미사를 드리고, 성인은 본기도로만 기억할 수 있다.";
-        out.fold = "except-collect";
+        out.fold = "except-collect"; out.tag = ["lent", "사순 평일 · 기억"];
         return out;
       }
       if (kind === "기념일") {
@@ -2873,9 +2908,14 @@
     }
 
     var LIST_FROM = null;
+    function yearTagHtml(mmdd) {
+      var t = (yearNotice(mmdd) || {}).tag;
+      return t ? '<span class="ent-st ' + t[0] + '">' + escapeHtml(t[1]) + "</span>" : "";
+    }
+
     function listHtml() {
-      var today = todayMMDD();
-      var upcoming = getDefaultDate(today, DATA.dates);
+      var today = isOtherYear() ? "" : todayMMDD();
+      var upcoming = isOtherYear() ? "" : getDefaultDate(today, DATA.dates);
 
       var html = '<div class="list-head">' +
         '<img class="ornament" src="' + ORNAMENT_SRC + '" alt="" width="1068" height="760" decoding="async">' +
@@ -2909,7 +2949,7 @@
         html += '<a class="entry' + (date === today ? " is-today" : "") + (date === upcoming ? " is-upcoming" : "") + (LIST_FROM === "d:" + date && date !== upcoming && date !== today ? " is-from" : "") +
           '" data-date="' + date + '" href="?date=' + date + '" title="' + escapeHtml(info.title) + '">' +
           '<span class="entry-date ui-font">' + escapeHtml(formatMonthDay(date)) + "</span>" +
-          '<span class="entry-title">' + vestmentBadge(info.color) + escapeHtml(shortTitle) + more + tag + "</span>" +
+          '<span class="entry-title">' + vestmentBadge(info.color) + escapeHtml(shortTitle) + more + tag + yearTagHtml(date) + "</span>" +
           (info.rank ? '<span class="entry-rank ui-font">' + escapeHtml(String(info.rank).replace(/\[/g, "(").replace(/\]/g, ")")) + "</span>" : "") +
           "</a>";
       }
@@ -2957,6 +2997,11 @@
     }
 
     function stateToUrl(state, home) {
+      var u = stateToUrlBase(state, home);
+      if (state.year && state.year !== thisYear()) u += (u.indexOf("?") > -1 ? "&" : "?") + "year=" + state.year;
+      return u;
+    }
+    function stateToUrlBase(state, home) {
       if (home) return window.location.pathname;
       if (state.view === "list") return "?view=list";
       if (state.view === "common") return "?common=" + encodeURIComponent(state.key);
@@ -2967,6 +3012,8 @@
 
     function render(state, opts) {
       opts = opts || {};
+      // 고른 해 유지: 새 상태에 해가 정해지지 않았으면 보던 해를 이어받음
+      if (state.year === undefined && !opts.fromUrl && currentState && currentState.year) state.year = currentState.year;
       currentState = state;
 
       var navHtml = "";
@@ -3047,6 +3094,7 @@
       document.getElementById("nav-bottom").innerHTML = navHtml;
       document.title = title;
       setToolbar(state.view === "mass" && /^v\d$/.test(String(state.date)) ? "votive" : state.view);
+      addYearButton(state);
 
       if (opts.push) {
         try {
@@ -3059,7 +3107,8 @@
           if (fromEl) {
             var y = fromEl.getBoundingClientRect().top + (window.pageYOffset || 0) - window.innerHeight * 0.3;
             window.scrollTo(0, Math.max(0, y));
-          } else scrollToUpcomingMonth();
+          } else if (isOtherYear()) window.scrollTo(0, 0);
+          else scrollToUpcomingMonth();
         }
         else window.scrollTo(0, 0);
       }
@@ -3081,6 +3130,13 @@
     function initialState() {
       var params = null;
       try { params = new URLSearchParams(window.location.search); } catch (e) {}
+      var py = params ? Number(params.get("year")) : 0;
+      var yr = (py >= 2000 && py <= 2999) ? py : null;
+      var st0 = initialStateBase(params);
+      st0.year = yr;
+      return st0;
+    }
+    function initialStateBase(params) {
       if (params && params.get("view") === "list") return { view: "list" };
       if (params && params.get("common")) return { view: "common", key: params.get("common") };
       if (params && params.get("mass")) { var mq = params.get("mass"); return { view: "mass", date: /^v\d$/.test(mq) ? mq : (normalizeDate(mq) || mq) }; }
@@ -3097,7 +3153,10 @@
 
       e.preventDefault();
       if (a.hasAttribute("data-home")) {
-        render(defaultState(), { push: true, home: true, scroll: true });
+        // 다가오는 고유미사: 그 날짜가 실제로 돌아오는 해로 (연말에는 내년)
+        var ds = defaultState();
+        ds.year = (ds.date < todayMMDD()) ? thisYear() + 1 : null;
+        render(ds, { push: true, home: true, scroll: true });
       } else if (a.hasAttribute("data-mass")) {
         render({ view: "mass", date: a.getAttribute("data-mass") }, { push: true, scroll: true });
       } else if (a.hasAttribute("data-common")) {
@@ -3119,7 +3178,7 @@
     });
 
     window.addEventListener("popstate", function () {
-      if (DATA) render(initialState(), { scroll: true });
+      if (DATA) render(initialState(), { scroll: true, fromUrl: true });
     });
 
     function showStatus(html) {
@@ -3162,7 +3221,7 @@
       if (data.rows.length === 0) throw new Error("empty");
       DATA = data;
       var st = (isRefresh && currentState) ? currentState : initialState();
-      render(st, (!isRefresh && st.view === "list") ? { scroll: true } : {});
+      render(st, (!isRefresh && st.view === "list") ? { scroll: true, fromUrl: true } : { fromUrl: true });
     }
 
     function load() {
