@@ -2407,6 +2407,7 @@
       return '<div class="fold-mark ui-font">' + text + '<br><button type="button" class="fold-open">펼쳐 보기 ▾</button></div>';
     }
     function foldProper(book, mode, isMass) {
+      book.setAttribute("data-fold-open", "0");
       var msg = (mode === "all") ? "이 날의 고유 미사는 <b>이 기념을 지내는 해</b>를 위한 것입니다."
                                  : "본기도 밖의 고유 부분은 <b>사순 시기가 아닌 해</b>를 위한 것입니다.";
       var hide = function (el) { el.setAttribute("data-folded", "1"); el.hidden = true; };
@@ -2453,11 +2454,15 @@
       if (keepTo < end) kids[keepTo].insertAdjacentHTML("beforebegin", foldMarker(msg));
       else kids[keepTo - 1].insertAdjacentHTML("afterend", foldMarker(msg));
     }
+    // 펼쳐 보기 ↔ 다시 접기 (안내는 그 자리에 남고 버튼 글씨만 바뀜, 모든 안내가 함께 움직임)
     document.addEventListener("click", function (e) {
       var b = e.target && e.target.closest ? e.target.closest(".fold-open") : null;
       if (!b) return;
-      [].forEach.call(document.querySelectorAll('#book [data-folded]'), function (el) { el.hidden = false; el.removeAttribute("data-folded"); });
-      [].forEach.call(document.querySelectorAll("#book .fold-mark, #book .fold-line"), function (el) { el.parentNode.removeChild(el); });
+      var book = document.getElementById("book");
+      var open = book.getAttribute("data-fold-open") !== "1";
+      book.setAttribute("data-fold-open", open ? "1" : "0");
+      [].forEach.call(book.querySelectorAll("[data-folded]"), function (el) { el.hidden = !open; });
+      [].forEach.call(book.querySelectorAll(".fold-open"), function (x) { x.textContent = open ? "다시 접기 ▴" : "펼쳐 보기 ▾"; });
     });
 
     // 선택 탭: 같은 묶음(data-group)은 페이지 전체에서 함께 바뀜
