@@ -2392,7 +2392,7 @@
       else if (c.sunday) reason = c.lent ? lentSundayName(c) : (c.advent ? adventSundayName(c)
                           : (sameDay(c.d, c.pent) ? "성령 강림 대축일" : (sameDay(c.d, c.asc) ? "주님 승천 대축일" : (c.easter ? "부활 시기 주일" : "주일"))));
       if (reason) {
-        out.box = D + "은 " + reason + "이어서, 올해는 이 " + kind + "을 지내지 않는다. 미사는 그날" + (c.sunday ? " 주일" : "의") + " 미사를 드린다.";
+        out.box = D + "은 " + reason + "이어서, 올해는 이 " + kind + "을 지내지 않는다. 미사는 이날의" + (c.sunday ? " 주일" : "의") + " 미사를 드린다.";
         out.fold = "all";
         var short = reason;
         if (c.holy) short = (c.d < c.E) ? "성주간" : "부활 팔일";
