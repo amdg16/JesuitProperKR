@@ -1088,19 +1088,11 @@
     .yr-opt:hover { background: rgba(110,46,50,0.06); }
     .yr-opt.on { color: var(--accent); font-weight: 700; }
     .yr-check { display: inline-block; width: 12px; color: var(--accent); }
-        /* 보는 해: 버튼처럼 보이지 않게 (아는 사람만 누르는 숨은 전환) */
+     .yr-check { display: inline-block; width: 12px; color: var(--accent); }
+
+    /* 보는 해 버튼: ▾ 화살표만 제거 */
     .yr-btn::after { content: none; }
-    .yr-btn,
-    .yr-btn.other {
-      padding: 2px 4px;
-      border: 0;
-      background: none;
-      color: var(--muted);
-      font-weight: 500;
-      opacity: 0.55;
-      cursor: default;
-    }
-    .yr-btn:hover { cursor: pointer; opacity: 0.8; }
+  </style>
   </style>
 
   <script>
