@@ -1089,7 +1089,19 @@
     .yr-opt.on { color: var(--accent); font-weight: 700; }
     .yr-check { display: inline-block; width: 12px; color: var(--accent); }
   </style>
-
+/* 보는 해: 버튼처럼 보이지 않게 (아는 사람만 누르는 숨은 전환) */
+.yr-btn::after { content: none; }
+.yr-btn,
+.yr-btn.other {
+  padding: 2px 4px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-weight: 500;
+  opacity: 0.55;
+  cursor: default;
+}
+.yr-btn:hover { cursor: pointer; opacity: 0.8; }
   <script>
     (function () {
       var STEPS = [10, 11, 12, 13, 14, 15, 16, 18, 19, 21, 23, 25, 28, 32];
