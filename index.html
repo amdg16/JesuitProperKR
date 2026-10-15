@@ -2345,8 +2345,8 @@
       [].forEach.call(book.querySelectorAll('p.common-ref[data-ref-kind="독서"] a.common-link'), function (a) {
         var n = a.textContent.trim(); if (names.indexOf(n) < 0) names.push(n);
       });
-      return '<p class="optional-note ui-font">평일 미사 또는 기념 미사. 기념 미사의 독서는 그날 평일 독서를 쓰거나, ' +
-        (names.length ? "아래 독서 또는 " + names.join("·") + " 독서 가운데에서 고를 수 있습니다." : "아래 독서를 쓸 수 있습니다.") + "</p>";
+      return '<p class="optional-note ui-font">기념 미사의 독서는 그날 평일 독서(매일 미사에 실린 본문)를 쓰거나, ' +
+        (names.length ? "아래 공통 독서 가운데에서 고를 수 있습니다." : "아래 독서를 쓸 수 있습니다.") + "</p>";
     }
 
     function applyYearNotices(mmdd) {
