@@ -2425,8 +2425,8 @@
       [].forEach.call(book.querySelectorAll('p.common-ref[data-ref-kind="독서"] a.common-link'), function (a) {
         var n = a.textContent.trim(); if (names.indexOf(n) < 0) names.push(n);
       });
-      return '<p class="optional-note ui-font">기념일 독서는 그날 평일 독서(매일 미사에 실린 본문)를 쓰거나, ' +
-        (names.length ? "아래 공통 독서 가운데에서 고를 수 있다." : "아래 독서를 쓸 수 있다.") + "</p>";
+      return '<p class="optional-note ui-font">기념일 독서는 그날 평일 독서( 『매일미사』에 실린 본문)를 쓰고, ' +
+        (names.length ? "사목적으로 알맞다면 아래 성인 공통 독서 가운데에서 고를 수 있다." : "아래 독서를 쓸 수 있다.") + "</p>";
     }
 
     function applyYearNotices(mmdd) {
