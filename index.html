@@ -14,7 +14,7 @@
   <meta property="og:description" content="예수회 고유 전례력에 따른 전례문을 볼 수 있습니다.">
   <meta property="og:image" content="img/frontispiece.png">
   <meta name="twitter:card" content="summary_large_image">
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" type="image/png" sizes="192x192" href="img/ihs-emblem.png">
   <link rel="apple-touch-icon" href="img/ihs-emblem.png">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#a71930">
@@ -1045,6 +1045,22 @@
     .footer { margin-top: 70px !important; }
 
     .mass-tools { margin-top: 0.4em !important; }
+
+    /* 해마다 달라지는 안내 */
+    .year-note { margin: 0.9em auto 0; max-width: 30em; padding: 10px 12px; border: 1px solid #e3c9c0; border-radius: 6px;
+      background: rgba(139,77,77,0.06); color: #6b3a3a; font-size: 13px; line-height: 1.6; text-align: left; }
+    .year-note b { color: var(--accent); }
+    .year-small { margin: 0.6em auto 0; max-width: 30em; color: var(--muted); font-size: 12.5px; line-height: 1.55; text-align: center; }
+    .year-small b { color: var(--accent); font-weight: 600; }
+    .fold-mark { margin: 1.4em 0; padding: 12px 14px; border: 1px dashed #cdb8ae; border-radius: 6px; text-align: center;
+      color: #7a3d3d; font-size: 13px; line-height: 1.6; background: rgba(139,77,77,0.04); }
+    .fold-line { margin: 0.5em 0 0.8em; color: #7a3d3d; font-size: 12.5px; }
+    .fold-open { padding: 0; border: 0; border-bottom: 1px dashed currentColor; background: none; color: #7a3d3d; font: inherit; cursor: pointer; }
+    .preface-note { margin: 0.6em 0 0.5em; color: var(--muted); font-size: 12px; line-height: 1.55; }
+    .preface-note b { color: var(--accent); font-weight: 600; }
+    .optional-note { margin: 1.6em 0 0 !important; color: var(--muted); font-size: 12px; line-height: 1.55; text-align: right; }
+    .optional-note + p.common-ref { margin-top: 0.3em !important; border-top: 0; padding-top: 0; }
+    @media print { .fold-mark, .fold-line { display: none !important; } [data-folded] { display: block !important; } }
   </style>
 
   <script>
@@ -2221,7 +2237,228 @@
           }
         }
       }
+
+      if (mmdd && /^\d{4}$/.test(String(mmdd))) applyYearNotices(mmdd);
     }
+
+
+    // ─────────────────────────────────────────────
+    // 해마다 달라지는 안내 (예수회 전례력 편집 가이드 기준)
+    //  ① 그해 지내지 않음 ② 사순 평일의 기념일 ③ 옮겨 지냄 ④ 토요일 ⑤ 시기별 감사송
+    //  + 선택 기념일 미사 안내
+    // 기준 해: 그 날짜가 다음에 돌아오는 해
+    // ─────────────────────────────────────────────
+    var DOW_KO = ["일", "월", "화", "수", "목", "금", "토"];
+    function nextYearFor(mmdd) {
+      var y = Number(new Intl.DateTimeFormat("en-US", { timeZone: TIMEZONE, year: "numeric" }).format(new Date()));
+      if (mmdd < todayMMDD()) y += 1;
+      return y;
+    }
+    function addDays(dt, n) { var x = new Date(dt.getTime()); x.setDate(x.getDate() + n); return x; }
+    function sameDay(a, b) { return a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+    function fmtFull(dt) { return dt.getFullYear() + "년 " + (dt.getMonth() + 1) + "월 " + dt.getDate() + "일"; }
+    function fmtFullDow(dt) { return fmtFull(dt) + "(" + DOW_KO[dt.getDay()] + ")"; }
+    function fmtMD(dt) { return (dt.getMonth() + 1) + "월 " + dt.getDate() + "일(" + DOW_KO[dt.getDay()] + ")"; }
+
+    function dayContext(mmdd) {
+      var y = nextYearFor(mmdd);
+      var d = new Date(y, Number(mmdd.slice(0, 2)) - 1, Number(mmdd.slice(2)));
+      var E = easterDate(y);
+      var c25 = new Date(y, 11, 25), w = c25.getDay();
+      var c = {
+        y: y, d: d, dow: d.getDay(), E: E,
+        ash: addDays(E, -46), palm: addDays(E, -7), oct: addDays(E, 7),
+        asc: addDays(E, 42),            // 한국: 주님 승천 대축일을 부활 제7주일에
+        pent: addDays(E, 49),
+        adv: addDays(c25, -(w === 0 ? 28 : 21 + w)),
+        epi: null
+      };
+      for (var k = 2; k <= 8; k++) { var t = new Date(y, 0, k); if (t.getDay() === 0) { c.epi = t; break; } }  // 한국: 공현 = 1월 2~8일 사이 주일
+      c.sunday = c.dow === 0;
+      c.ashWed = sameDay(d, c.ash);
+      c.lent = d > c.ash && d < c.palm;
+      c.holy = d >= c.palm && d <= c.oct;      // 성지 주일 ~ 부활 제2주일
+      c.easter = d >= E && d <= c.pent;
+      c.advent = d >= c.adv && d < c25;
+      return c;
+    }
+    function lentSundayName(c) { return "사순 제" + (Math.round((c.d - addDays(c.ash, 4)) / 864e5 / 7) + 1) + "주일"; }
+    function adventSundayName(c) { return "대림 제" + (Math.round((c.d - c.adv) / 864e5 / 7) + 1) + "주일"; }
+
+    function yearNotice(mmdd) {
+      var info = (DATA && DATA.info && DATA.info[mmdd]) || {};
+      var r = String(info.rank || "");
+      var c = dayContext(mmdd);
+      var out = { box: "", small: "", fold: null, preface: "" };
+      var D = "<b>" + fmtFull(c.d) + "</b>", DD = "<b>" + fmtFullDow(c.d) + "</b>";
+
+      if (mmdd === "0103") {
+        if (sameDay(c.epi, c.d)) out.box = D + "은 주님 공현 대축일(주일)이어서, 이 대축일은 <b>" + fmtMD(addDays(c.d, 1)) + "</b>로 옮겨 지냅니다.";
+        else if (c.dow === 6) out.small = DD + " · 대축일 미사는 아침에만 드립니다. 저녁부터는 주일 미사입니다.";
+        return out;
+      }
+      if (mmdd === "0319") {
+        var to = null, why = "";
+        if (c.holy && c.d < c.E) { to = addDays(c.palm, -1); why = sameDay(c.d, c.palm) ? "주님 수난 성지 주일" : "성주간"; }
+        else if (c.sunday) { to = addDays(c.d, 1); why = c.lent ? lentSundayName(c) : "주일"; }
+        if (to) out.box = D + "은 " + why + "이어서, 이 대축일은 <b>" + fmtMD(to) + "</b>로 옮겨 지냅니다.";
+        return out;
+      }
+      if (/대축일/.test(r)) return out;                 // 7월 31일 등: 항상 기념
+      if (!r) {                                          // 11월 6일 (죽은 모든 예수회원)
+        if (c.sunday) out.box = D + "은 주일이어서, 이 날은 <b>" + fmtMD(addDays(c.d, 1)) + "</b>에 지냅니다.";
+        return out;
+      }
+      var kind = (r === "축일") ? "축일" : "기념일";
+      var reason = "";
+      if (c.holy) reason = (c.d < c.E) ? (sameDay(c.d, c.palm) ? "주님 수난 성지 주일" : "성주간")
+                         : (sameDay(c.d, c.E) ? "주님 부활 대축일" : (sameDay(c.d, c.oct) ? "부활 제2주일" : "부활 팔일 축제 기간"));
+      else if (c.ashWed) reason = "재의 수요일";
+      else if (c.sunday) reason = c.lent ? lentSundayName(c) : (c.advent ? adventSundayName(c)
+                          : (sameDay(c.d, c.pent) ? "성령 강림 대축일" : (sameDay(c.d, c.asc) ? "주님 승천 대축일" : (c.easter ? "부활 시기 주일" : "주일"))));
+      if (reason) {
+        out.box = D + "은 " + reason + "이어서, 올해는 이 " + kind + "을 지내지 않습니다. 미사는 그날" + (c.sunday ? " 주일" : "의") + " 미사를 드립니다.";
+        out.fold = "all";
+        return out;
+      }
+      if (c.lent && kind === "기념일") {
+        out.box = DD + "은 사순 시기 평일입니다. 미사는 그날 사순 평일 미사를 드리고, 성인은 본기도로만 기억할 수 있습니다.";
+        out.fold = "except-collect";
+        return out;
+      }
+      if (c.dow === 6) out.small = DD + " · " + (kind === "축일" ? "축일" : "기념") + " 미사는 아침에만 드립니다. 저녁부터는 주일 미사입니다.";
+      if (kind === "기념일") {
+        var own = (mmdd === "0524") ? "복되신 동정 마리아 감사송 1" : "성인 관련 감사송";
+        if (c.easter) {
+          out.preface = (c.d < c.asc)
+            ? DD + " · 부활 시기(주님 승천 전)이므로 감사송은 부활 감사송이나 " + own + "을 쓸 수 있습니다."
+            : DD + " · 부활 시기(주님 승천 후)이므로 감사송은 부활 감사송, 승천 감사송, " + own + " 가운데에서 쓸 수 있습니다.";
+        } else if (c.advent) {
+          out.preface = DD + " · 대림 시기이므로 감사송은 대림 감사송 1이나 " + own + "을 쓸 수 있습니다.";
+        }
+      }
+      return out;
+    }
+
+    function optionalNoteHtml(book) {
+      var names = [];
+      [].forEach.call(book.querySelectorAll('p.common-ref[data-ref-kind="독서"] a.common-link'), function (a) {
+        var n = a.textContent.trim(); if (names.indexOf(n) < 0) names.push(n);
+      });
+      return '<p class="optional-note ui-font">평일 미사 또는 기념 미사. 기념 미사의 독서는 그날 평일 독서를 쓰거나, ' +
+        (names.length ? "아래 독서 또는 " + names.join("·") + " 독서 가운데에서 고를 수 있습니다." : "아래 독서를 쓸 수 있습니다.") + "</p>";
+    }
+
+    function applyYearNotices(mmdd) {
+      var book = document.getElementById("book");
+      if (!book || !DATA) return;
+      var isMass = !!book.querySelector(".mass-tools");
+      var info = DATA.info[mmdd] || {};
+      var n = yearNotice(mmdd);
+
+      // 선택 기념일 미사 안내: 제1독서 바로 위 (참고 · 예수회 공통 독서 줄이 있으면 그 위)
+      if (/선택/.test(String(info.rank || ""))) {
+        var anchor = null;
+        if (isMass) {
+          var h3 = [].filter.call(book.querySelectorAll("h3.mass-sec"), function (h) { return /^제1독서/.test(h.textContent.trim()); })[0];
+          var e = h3; while (e && !(e.classList && (e.classList.contains("proper-slot") || e.classList.contains("choice")))) e = e.nextElementSibling;
+          anchor = e;
+        } else {
+          anchor = book.querySelector('p.common-ref[data-ref-kind="독서"]');
+          if (!anchor) {
+            var hh = [].filter.call(book.querySelectorAll("h2"), function (h) { return /^제1독서/.test(h.textContent.trim()); })[0];
+            anchor = hh ? (hh.closest(".choice") || hh) : null;
+          }
+        }
+        if (anchor) anchor.insertAdjacentHTML("beforebegin", optionalNoteHtml(book));
+      }
+
+      // ⑤ 시기별 감사송: 감사송 자리 위에
+      if (n.preface) {
+        var pn = '<p class="preface-note ui-font">' + n.preface + "</p>";
+        if (isMass) {
+          var pr = [].filter.call(book.querySelectorAll("p.mass-rubric"), function (p) { return /감사송을 계속한다/.test(p.textContent); })[0];
+          if (pr) pr.insertAdjacentHTML("afterend", pn);
+        } else {
+          var pl = book.querySelector('.expand-link[data-key^="pref:"]');
+          var line = pl ? pl.closest("p") : null;
+          if (line) line.insertAdjacentHTML("beforebegin", pn);
+          else {
+            var off = [].filter.call(book.querySelectorAll("h2"), function (h) { return /^예물 기도/.test(h.textContent.trim()); })[0];
+            if (off) { var x = off.nextElementSibling; while (x && x.nextElementSibling && x.nextElementSibling.tagName !== "H2") x = x.nextElementSibling; if (x) x.insertAdjacentHTML("afterend", pn); }
+          }
+        }
+      }
+
+      // ①②③ 안내 상자, ④ 작은 줄: 제목 바로 아래
+      var h1 = book.querySelector("h1.feast-title");
+      if (h1) {
+        var top = "";
+        if (n.box) top += '<div class="year-note ui-font">' + n.box + "</div>";
+        if (n.small) top += '<p class="year-small ui-font">' + n.small + "</p>";
+        if (top) h1.insertAdjacentHTML("afterend", top);
+      }
+
+      // ①② 접기
+      if (n.fold) foldProper(book, n.fold, isMass);
+    }
+
+    function foldMarker(text) {
+      return '<div class="fold-mark ui-font">' + text + '<br><button type="button" class="fold-open">펼쳐 보기 ▾</button></div>';
+    }
+    function foldProper(book, mode, isMass) {
+      var msg = (mode === "all") ? "이 날의 고유 미사는 <b>이 기념을 지내는 해</b>를 위한 것입니다."
+                                 : "본기도 밖의 고유 부분은 <b>사순 시기가 아닌 해</b>를 위한 것입니다.";
+      var hide = function (el) { el.setAttribute("data-folded", "1"); el.hidden = true; };
+      if (isMass) {
+        [].slice.call(book.children).forEach(function (el) {
+          if (!el.classList) return;
+          var isProper = el.classList.contains("proper-slot") || el.classList.contains("choice") ||
+                         (el.classList.contains("expand-panel") && el.classList.contains("always")) || el.classList.contains("optional-note");
+          if (!isProper) return;
+          // 통상문의 감사 기도·신경 선택 탭은 고유 부분이 아니므로 그대로
+          var t0 = el.querySelector(".expand-tab");
+          if (t0 && /^(감사 기도|사도 신경|니케아)/.test(t0.textContent.trim())) return;
+          if (mode === "except-collect" && el.classList.contains("proper-slot")) {
+            var lb = el.querySelector(".proper-label");
+            if (lb && /^본기도/.test(lb.textContent.trim())) return;
+          }
+          if (el.classList.contains("optional-note")) { hide(el); return; }
+          el.insertAdjacentHTML("beforebegin", '<p class="fold-line ui-font">올해는 그날 미사의 것을 씁니다 · <button type="button" class="fold-open">펼쳐 보기 ▾</button></p>');
+          hide(el);
+        });
+        return;
+      }
+      var kids = [].slice.call(book.children);
+      var start = -1, end = kids.length;
+      kids.forEach(function (el, i) {
+        if (start < 0 && i > 0 && (el.tagName === "H2" || (el.classList && (el.classList.contains("common-ref") || el.classList.contains("choice") || el.classList.contains("optional-note"))))) start = i;
+        if (el.classList && el.classList.contains("end-mark")) end = i;
+      });
+      if (start < 0) return;
+      var keepFrom = -1, keepTo = -1;
+      if (mode === "except-collect") {
+        for (var i = start; i < end; i++) {
+          var el = kids[i];
+          if (el.tagName === "H2" && /^본기도/.test(el.textContent.trim())) {
+            keepFrom = i; keepTo = i + 1;
+            while (keepTo < end && kids[keepTo].tagName !== "H2" && !(kids[keepTo].classList && (kids[keepTo].classList.contains("choice") || kids[keepTo].classList.contains("common-ref") || kids[keepTo].classList.contains("optional-note")))) keepTo++;
+            break;
+          }
+        }
+      }
+      for (var j = start; j < end; j++) if (!(j >= keepFrom && j < keepTo)) hide(kids[j]);
+      if (keepFrom < 0) { kids[start].insertAdjacentHTML("beforebegin", foldMarker(msg)); return; }
+      if (keepFrom > start) kids[start].insertAdjacentHTML("beforebegin", foldMarker(msg));
+      if (keepTo < end) kids[keepTo].insertAdjacentHTML("beforebegin", foldMarker(msg));
+      else kids[keepTo - 1].insertAdjacentHTML("afterend", foldMarker(msg));
+    }
+    document.addEventListener("click", function (e) {
+      var b = e.target && e.target.closest ? e.target.closest(".fold-open") : null;
+      if (!b) return;
+      [].forEach.call(document.querySelectorAll('#book [data-folded]'), function (el) { el.hidden = false; el.removeAttribute("data-folded"); });
+      [].forEach.call(document.querySelectorAll("#book .fold-mark, #book .fold-line"), function (el) { el.parentNode.removeChild(el); });
+    });
 
     // 선택 탭: 같은 묶음(data-group)은 페이지 전체에서 함께 바뀜
     document.addEventListener("click", function (e) {
