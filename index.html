@@ -2293,20 +2293,19 @@
       var D = "<b>" + fmtFull(c.d) + "</b>", DD = "<b>" + fmtFullDow(c.d) + "</b>";
 
       if (mmdd === "0103") {
-        if (sameDay(c.epi, c.d)) out.box = D + "은 주님 공현 대축일(주일)이어서, 이 대축일은 <b>" + fmtMD(addDays(c.d, 1)) + "</b>로 옮겨 지냅니다.";
-        else if (c.dow === 6) out.small = DD + " · 대축일 미사는 아침에만 드립니다. 저녁부터는 주일 미사입니다.";
+        if (sameDay(c.epi, c.d)) out.box = D + "은 주님 공현 대축일(주일)이어서, 이 대축일은 <b>" + fmtMD(addDays(c.d, 1)) + "</b>로 옮겨 지낸다.";
         return out;
       }
       if (mmdd === "0319") {
         var to = null, why = "";
         if (c.holy && c.d < c.E) { to = addDays(c.palm, -1); why = sameDay(c.d, c.palm) ? "주님 수난 성지 주일" : "성주간"; }
         else if (c.sunday) { to = addDays(c.d, 1); why = c.lent ? lentSundayName(c) : "주일"; }
-        if (to) out.box = D + "은 " + why + "이어서, 이 대축일은 <b>" + fmtMD(to) + "</b>로 옮겨 지냅니다.";
+        if (to) out.box = D + "은 " + why + "이어서, 이 대축일은 <b>" + fmtMD(to) + "</b>로 옮겨 지낸다.";
         return out;
       }
       if (/대축일/.test(r)) return out;                 // 7월 31일 등: 항상 기념
       if (!r) {                                          // 11월 6일 (죽은 모든 예수회원)
-        if (c.sunday) out.box = D + "은 주일이어서, 이 날은 <b>" + fmtMD(addDays(c.d, 1)) + "</b>에 지냅니다.";
+        if (c.sunday) out.box = D + "은 주일이어서, 이 날은 <b>" + fmtMD(addDays(c.d, 1)) + "</b>에 지낸다.";
         return out;
       }
       var kind = (r === "축일") ? "축일" : "기념일";
@@ -2317,24 +2316,23 @@
       else if (c.sunday) reason = c.lent ? lentSundayName(c) : (c.advent ? adventSundayName(c)
                           : (sameDay(c.d, c.pent) ? "성령 강림 대축일" : (sameDay(c.d, c.asc) ? "주님 승천 대축일" : (c.easter ? "부활 시기 주일" : "주일"))));
       if (reason) {
-        out.box = D + "은 " + reason + "이어서, 올해는 이 " + kind + "을 지내지 않습니다. 미사는 그날" + (c.sunday ? " 주일" : "의") + " 미사를 드립니다.";
+        out.box = D + "은 " + reason + "이어서, 올해는 이 " + kind + "을 지내지 않는다. 미사는 그날" + (c.sunday ? " 주일" : "의") + " 미사를 드린다.";
         out.fold = "all";
         return out;
       }
       if (c.lent && kind === "기념일") {
-        out.box = DD + "은 사순 시기 평일입니다. 미사는 그날 사순 평일 미사를 드리고, 성인은 본기도로만 기억할 수 있습니다.";
+        out.box = DD + "은 사순 시기 평일이다. 미사는 그날 사순 평일 미사를 드리고, 성인은 본기도로만 기억할 수 있다.";
         out.fold = "except-collect";
         return out;
       }
-      if (c.dow === 6) out.small = DD + " · " + (kind === "축일" ? "축일" : "기념") + " 미사는 아침에만 드립니다. 저녁부터는 주일 미사입니다.";
       if (kind === "기념일") {
         var own = (mmdd === "0524") ? "복되신 동정 마리아 감사송 1" : "성인 관련 감사송";
         if (c.easter) {
           out.preface = (c.d < c.asc)
-            ? DD + " · 부활 시기(주님 승천 전)이므로 감사송은 부활 감사송이나 " + own + "을 쓸 수 있습니다."
-            : DD + " · 부활 시기(주님 승천 후)이므로 감사송은 부활 감사송, 승천 감사송, " + own + " 가운데에서 쓸 수 있습니다.";
+            ? DD + " · 부활 시기(주님 승천 전)이므로 감사송은 부활 감사송이나 " + own + "을 쓸 수 있다."
+            : DD + " · 부활 시기(주님 승천 후)이므로 감사송은 부활 감사송, 승천 감사송, " + own + " 가운데에서 쓸 수 있다.";
         } else if (c.advent) {
-          out.preface = DD + " · 대림 시기이므로 감사송은 대림 감사송 1이나 " + own + "을 쓸 수 있습니다.";
+          out.preface = DD + " · 대림 시기이므로 감사송은 대림 감사송 1이나 " + own + "을 쓸 수 있다.";
         }
       }
       return out;
@@ -2345,8 +2343,8 @@
       [].forEach.call(book.querySelectorAll('p.common-ref[data-ref-kind="독서"] a.common-link'), function (a) {
         var n = a.textContent.trim(); if (names.indexOf(n) < 0) names.push(n);
       });
-      return '<p class="optional-note ui-font">기념 미사의 독서는 그날 평일 독서(매일 미사에 실린 본문)를 쓰거나, ' +
-        (names.length ? "아래 공통 독서 가운데에서 고를 수 있습니다." : "아래 독서를 쓸 수 있습니다.") + "</p>";
+      return '<p class="optional-note ui-font">기념일 독서는 그날 평일 독서(매일 미사에 실린 본문)를 쓰거나, ' +
+        (names.length ? "아래 공통 독서 가운데에서 고를 수 있다." : "아래 독서를 쓸 수 있다.") + "</p>";
     }
 
     function applyYearNotices(mmdd) {
@@ -2408,8 +2406,8 @@
     }
     function foldProper(book, mode, isMass) {
       book.setAttribute("data-fold-open", "0");
-      var msg = (mode === "all") ? "이 날의 고유 미사는 <b>이 기념을 지내는 해</b>를 위한 것입니다."
-                                 : "본기도 밖의 고유 부분은 <b>사순 시기가 아닌 해</b>를 위한 것입니다.";
+      var msg = (mode === "all") ? "이 날의 고유 미사는 <b>이 기념을 지내는 해</b>를 위한 것이다."
+                                 : "본기도 밖의 고유 부분은 <b>사순 시기가 아닌 해</b>를 위한 것이다.";
       var hide = function (el) { el.setAttribute("data-folded", "1"); el.hidden = true; };
       if (isMass) {
         [].slice.call(book.children).forEach(function (el) {
@@ -2425,7 +2423,7 @@
             if (lb && /^본기도/.test(lb.textContent.trim())) return;
           }
           if (el.classList.contains("optional-note")) { hide(el); return; }
-          el.insertAdjacentHTML("beforebegin", '<p class="fold-line ui-font">올해는 그날 미사의 것을 씁니다 · <button type="button" class="fold-open">펼쳐 보기 ▾</button></p>');
+          el.insertAdjacentHTML("beforebegin", '<p class="fold-line ui-font">올해는 그날 미사의 것을 쓴다 · <button type="button" class="fold-open">펼쳐 보기 ▾</button></p>');
           hide(el);
         });
         return;
