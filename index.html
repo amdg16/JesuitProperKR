@@ -1088,11 +1088,12 @@
     .yr-opt:hover { background: rgba(110,46,50,0.06); }
     .yr-opt.on { color: var(--accent); font-weight: 700; }
     .yr-check { display: inline-block; width: 12px; color: var(--accent); }
-     .yr-check { display: inline-block; width: 12px; color: var(--accent); }
 
-    /* 보는 해 버튼: ▾ 화살표만 제거 */
-    .yr-btn::after { content: none; }
-  </style>
+    /* 읽기 편한 줄바꿈: 단어 중간에서 끊지 않고, 줄 끝에 한두 글자만 남지 않게 */
+    #book p, #book .subtitle, .expand-panel p, .proper-slot p { word-break: keep-all; overflow-wrap: break-word; text-wrap: pretty; }
+    /* 독서의 호흡 줄: 접히면 둘째 줄부터 들여 쓰기 */
+    #book p:has(> .rl) { margin-bottom: 0.9em; }
+    .rl { display: block; padding-left: 1.2em; text-indent: -1.2em; }
   </style>
 
   <script>
@@ -1498,8 +1499,14 @@
         if (buffer.length === 0) return;
         var cls = (isFirstBlock && isAntiphon) ? ' class="antiphon-body"' : "";
         var stl = nextBlockStyle ? ' style="' + nextBlockStyle + '"' : "";
-        var body = buffer.map(escapeHtmlWithCross).join("<br>");
-        if (isReading) body = markVerseNumbers(body);
+        var body;
+        if (isReading && buffer.length > 1) {
+          // 책의 호흡 단위 줄 나눔을 그대로: 한 줄이 길어 접히면 둘째 줄부터 들여 써서 새 호흡과 구분
+          body = buffer.map(function (l) { return '<span class="rl">' + markVerseNumbers(escapeHtmlWithCross(l)) + "</span>"; }).join("");
+        } else {
+          body = buffer.map(escapeHtmlWithCross).join("<br>");
+          if (isReading) body = markVerseNumbers(body);
+        }
         html += "<p" + cls + stl + ">" + body + "</p>";
         buffer = [];
         isFirstBlock = false;
@@ -2397,7 +2404,7 @@
       else if (c.sunday) reason = c.lent ? lentSundayName(c) : (c.advent ? adventSundayName(c)
                           : (sameDay(c.d, c.pent) ? "성령 강림 대축일" : (sameDay(c.d, c.asc) ? "주님 승천 대축일" : (c.easter ? "부활 시기 주일" : "주일"))));
       if (reason) {
-        out.box = D + "은 " + reason + "이어서, 올해는 이 " + kind + "을 지내지 않는다. 미사는 이날의" + (c.sunday ? " 주일" : "의") + " 미사를 드린다.";
+        out.box = D + "은 " + reason + "이어서, 올해는 이 " + kind + "을 지내지 않는다. 미사는 그날" + (c.sunday ? " 주일" : "의") + " 미사를 드린다.";
         out.fold = "all";
         var short = reason;
         if (c.holy) short = (c.d < c.E) ? "성주간" : "부활 팔일";
@@ -2408,7 +2415,7 @@
         return out;
       }
       if (c.lent && kind === "기념일") {
-        out.box = DD + "은 사순 시기 평일이다. 미사는 그날 사순 평일 미사를 드리고, 성인은 본기도에서 기억할 수 있다.";
+        out.box = DD + "은 사순 시기 평일이다. 미사는 그날 사순 평일 미사를 드리고, 성인은 본기도로만 기억할 수 있다.";
         out.fold = "except-collect"; out.tag = ["lent", "△ 사순 평일"];
         return out;
       }
@@ -2430,8 +2437,8 @@
       [].forEach.call(book.querySelectorAll('p.common-ref[data-ref-kind="독서"] a.common-link'), function (a) {
         var n = a.textContent.trim(); if (names.indexOf(n) < 0) names.push(n);
       });
-      return '<p class="optional-note ui-font">성인 고유 독서가 없는 날이므로 독서는 이날 평일 독서(『매일미사』에 실린 본문)를 쓰고,<br>' +
-        (names.length ? "사목적으로 알맞다면 아래 성인 공통 독서 가운데에서 고를 수 있다." : "아래 독서를 쓸 수 있다.") + "</p>";
+      return '<p class="optional-note ui-font">기념일 독서는 그날 평일 독서(매일 미사에 실린 본문)를 쓰거나, ' +
+        (names.length ? "아래 공통 독서 가운데에서 고를 수 있다." : "아래 독서를 쓸 수 있다.") + "</p>";
     }
 
     function applyYearNotices(mmdd) {
