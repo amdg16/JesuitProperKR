@@ -1095,6 +1095,13 @@
     .preface-note, .optional-note, .empty-message { text-wrap: balance; }
     h1.feast-title .h1-name, h1.feast-title .h1-sub, .list-title { text-wrap: balance; }
 
+    /* 안내 상자·작은 안내 줄(div)도 단어 중간에서 끊기지 않게 */
+    .year-note, .year-small, .fold-mark, .fold-line, .preface-note, .optional-note,
+    .season-divider, .expand-panel, .expand-meta, .notice, .empty-message, .list-sub, .mass-or {
+      word-break: keep-all;
+      overflow-wrap: break-word;
+    }
+
     /* 안내문: 의미 단위(.nb)로만 줄이 바뀜. 넓은 화면은 단위마다 한 줄, 좁은 화면은 자연스럽게 */
     .optional-note { text-align: left; }
     .optional-note .nb { display: inline-block; }
