@@ -1125,6 +1125,9 @@
       content: "올해는 쓰지 않음"; display: block; margin-bottom: 0.4em;
       color: var(--rubric); font-size: 11.5px; font-weight: 600;
     }
+
+    /* 독서의 호흡 줄(책의 줄 나눔): 한 줄이 길어 접히면 둘째 줄부터 들여 쓰기 */
+    .rl { display: block; padding-left: 1.2em; text-indent: -1.2em; }
   </style>
 
   <script>
@@ -1552,8 +1555,14 @@
         if (buffer.length === 0) return;
         var cls = (isFirstBlock && isAntiphon) ? ' class="antiphon-body"' : "";
         var stl = nextBlockStyle ? ' style="' + nextBlockStyle + '"' : "";
-        var body = buffer.map(escapeHtmlWithCross).join(joiner);
-        if (isReading) body = markVerseNumbers(body);
+        var body;
+        if (isReading && buffer.length > 1) {
+          // 책의 호흡 단위 줄 나눔을 그대로: 한 줄이 길어 접히면 둘째 줄부터 들여 써서 새 호흡과 구분
+          body = buffer.map(function (l) { return '<span class="rl">' + markVerseNumbers(escapeHtmlWithCross(l)) + "</span>"; }).join("");
+        } else {
+          body = buffer.map(escapeHtmlWithCross).join(joiner);
+          if (isReading) body = markVerseNumbers(body);
+        }
         html += "<p" + cls + stl + ">" + body + "</p>";
         buffer = [];
         isFirstBlock = false;
@@ -2502,14 +2511,20 @@
       return out;
     }
 
-    function optionalNoteHtml(book) {
+    // 선택 기념일 중 "공통 독서가 실린 날"에만 미사 안내를 붙임.
+    // 실린 독서가 공통이 아니라 그날 고유인 5/8(설리번), 5/24(길의 인도자이신 성모), 8/2(파브르)는 제외.
+    var NO_OPTIONAL_NOTE = ["0508", "0524", "0802"];
+
+    function optionalNoteHtml(book, mmdd) {
+      if (NO_OPTIONAL_NOTE.indexOf(mmdd) > -1) return "";
       var names = [];
       [].forEach.call(book.querySelectorAll('p.common-ref[data-ref-kind="독서"] a.common-link'), function (a) {
         var n = a.textContent.trim(); if (names.indexOf(n) < 0) names.push(n);
       });
+      if (!names.length) return "";
       return '<p class="optional-note ui-font">' +
-        '<span class="nb">성인 고유 독서가 없는 날이므로 독서는 이날 평일 독서(『매일미사』에 실린 본문)를 쓰고,</span> ' +
-        '<span class="nb">' + (names.length ? "사목적으로 알맞다면 아래 성인 공통 독서 가운데에서 고를 수 있다." : "아래 독서를 쓸 수 있다.") + "</span></p>";
+        '<span class="nb">성인 고유 독서가 없는 날이므로 이날 평일 독서(『매일미사』의 본문)를 쓰거나,</span> ' +
+        '<span class="nb">필요한 경우 아래 성인 공통 독서를 선택할 수 있다.</span></p>';
     }
 
     function applyYearNotices(mmdd) {
@@ -2539,7 +2554,8 @@
             anchor = hh ? (hh.closest(".choice") || hh) : null;
           }
         }
-        if (anchor) anchor.insertAdjacentHTML("beforebegin", optionalNoteHtml(book));
+        var noteHtml = optionalNoteHtml(book, mmdd);
+        if (anchor && noteHtml) anchor.insertAdjacentHTML("beforebegin", noteHtml);
       }
 
       // ⑤ 시기별 감사송: 감사송 자리 위에
