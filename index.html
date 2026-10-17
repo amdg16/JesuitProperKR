@@ -1129,8 +1129,9 @@
     /* 독서의 호흡 줄(책의 줄 나눔): 한 줄이 길어 접히면 둘째 줄부터 들여 쓰기 */
     .rl { display: block; padding-left: 1.2em; text-indent: -1.2em; }
 
-    /* 선택 기념일 안내: 한 문장, 11px, 왼쪽 정렬 (줄은 브라우저가 자연스럽게) */
-    .optional-note { font-size: 11px; text-align: left; text-wrap: pretty; }
+    /* 선택 기념일 안내: 한 문장, 11px, 오른쪽 정렬 (줄은 고르게 나눠 한 줄에 한두 글자만 남지 않게) */
+    .optional-note { font-size: 11px; text-align: right; text-wrap: balance; }
+    @media (min-width: 640px) { .optional-note .nw { white-space: nowrap; } }
   </style>
 
   <script>
@@ -2525,7 +2526,7 @@
         var n = a.textContent.trim(); if (names.indexOf(n) < 0) names.push(n);
       });
       if (!names.length) return "";
-      return '<p class="optional-note ui-font">성인 고유 독서가 없는 날이므로 이날 평일 독서(『매일미사』의 본문)를 쓰거나, 필요한 경우 아래 성인 공통 독서를 선택할 수 있다.</p>';
+      return '<p class="optional-note ui-font">성인 고유 독서가 없는 날이므로 이날 평일 <span class="nw">독서(『매일미사』의 본문)를</span> 쓰거나, 필요한 경우 아래 성인 공통 독서를 선택할 수 있다.</p>';
     }
 
     function applyYearNotices(mmdd) {
