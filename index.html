@@ -1126,8 +1126,9 @@
       color: var(--rubric); font-size: 11.5px; font-weight: 600;
     }
 
-    /* 독서의 호흡 줄(책의 줄 나눔): 모든 줄을 왼쪽에 붙임 */
+    /* 독서의 호흡 줄(책의 줄 나눔): 넓은 화면은 줄마다 따로, 휴대폰은 문단으로 이어서 */
     .rl { display: block; }
+    @media (max-width: 600px) { .rl { display: inline; } }
 
     /* 선택 기념일 안내: 한 문장, 11px, 오른쪽 정렬 (줄은 고르게 나눠 한 줄에 한두 글자만 남지 않게) */
     .optional-note { font-size: 11px; text-align: right; text-wrap: balance; }
@@ -1564,7 +1565,7 @@
         var body;
         if (isReading && buffer.length > 1) {
           // 책의 호흡 단위 줄 나눔을 그대로: 한 줄이 길어 접히면 둘째 줄부터 들여 써서 새 호흡과 구분
-          body = buffer.map(function (l) { return '<span class="rl">' + markVerseNumbers(escapeHtmlWithCross(l)) + "</span>"; }).join("");
+          body = buffer.map(function (l) { return '<span class="rl">' + markVerseNumbers(escapeHtmlWithCross(l)) + "</span>"; }).join(" ");
         } else {
           body = buffer.map(escapeHtmlWithCross).join(joiner);
           if (isReading) body = markVerseNumbers(body);
