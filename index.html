@@ -933,6 +933,7 @@
     h3.mass-sec { margin: 1.7em 0 0.5em; font-size: 1.02em; }
     p.mass-rubric { margin: 0.4em 0 0.5em; color: var(--rubric); font-size: 0.78em; line-height: 1.6; }
     p.mass-rubric.foot { font-size: 0.72em; color: var(--muted); }
+    p.mass-rubric.who { text-align: right; font-weight: 600; font-size: 0.74em; margin: 0.9em 0 0.2em; }
     html.hide-rubrics p.mass-rubric { display: none; }
     .proper-slot {
       margin: 0.6em 0 1em; padding: 0.7em 0.9em 0.2em;
@@ -2875,6 +2876,7 @@
       if (b.k === "H1") return '<h2 class="mass-part ui-font">' + escapeHtml(b.t) + "</h2>";
       if (b.k === "H2") return '<h3 class="mass-sec"><span class="item-name">' + escapeHtml(b.t) + "</span></h3><hr class='item-divider'>";
       if (b.k === "R" && b.t.trim() === "또는") return '<p class="mass-or">또는</p>';
+      if (b.k === "W") return '<p class="mass-rubric who">' + escapeHtml(b.t) + "</p>";
       if (b.k === "R") return '<p class="mass-rubric' + (b.foot ? " foot" : "") + '">' + escapeHtml(b.t) + "</p>";
       if (b.k === "T") return ordoTextHtml(b.t);
       return "";
