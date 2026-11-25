@@ -1,6 +1,6 @@
 // 서비스 워커: 본문(HTML)은 항상 최신을 먼저 받아오고(네트워크 우선),
 // 오프라인일 때만 저장해 둔 화면을 보여준다. 이미지 등은 캐시 우선으로 속도만 챙긴다.
-const CACHE_NAME = "jesuitproperkr-v4"; // 버전 올림: 예전 캐시를 정리하기 위함
+const CACHE_NAME = "jesuitproperkr-v5"; // 버전 올림: 예전 캐시를 정리하기 위함
 const CORE_ASSETS = ["./", "./index.html"];
 
 self.addEventListener("install", (event) => {
@@ -33,7 +33,20 @@ self.addEventListener("fetch", (event) => {
   var isPage =
     req.mode === "navigate" ||
     (req.method === "GET" && (req.headers.get("accept") || "").indexOf("text/html") !== -1);
-
+ 
+  // 통상문 데이터(ordinary.json)도 네트워크 우선: 고친 내용이 앱에도 바로 반영되도록
+  if (req.url.indexOf("ordinary.json") !== -1) {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+          return res;
+        })
+        .catch(() => caches.match(req))
+    );
+    return;
+  }
   if (isPage) {
     // 페이지(HTML)는 네트워크 우선: 수정사항이 바로 반영되도록
     event.respondWith(
