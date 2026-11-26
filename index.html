@@ -935,6 +935,8 @@
     p.mass-rubric.foot { font-size: 0.72em; color: var(--muted); }
     p.mass-rubric.who { text-align: right; font-weight: 600; font-size: 0.74em; margin: 0.9em 0 0.2em; }
     html.hide-rubrics p.mass-rubric { display: none; }
+    .mass-inline-r { color: var(--rubric); font-size: 0.78em; }
+html.hide-rubrics .mass-inline-r { display: none; }
     .proper-slot {
       margin: 0.6em 0 1em; padding: 0.7em 0.9em 0.2em;
       border-left: 3px solid var(--accent); border-radius: 0 4px 4px 0; background: rgba(110,46,50,0.045);
@@ -2723,8 +2725,13 @@
     }
 
     function ordoTextHtml(t) {
-      return "<p>" + String(t).split("\n").map(function (l) { return escapeHtmlWithCross(l.trim()); }).join("<br>") + "</p>";
-    }
+  return "<p>" + String(t).split("\n").map(function (l) {
+    var m = l.trim().split("[[r]]");
+    var s = escapeHtmlWithCross(m[0].trim());
+    if (m.length > 1) s += ' <span class="mass-inline-r">' + escapeHtml(m[1].trim()) + "</span>";
+    return s;
+  }).join("<br>") + "</p>";
+}
 
     function tabsBlockHtml(items) {
       // items: [{tab, html}]
